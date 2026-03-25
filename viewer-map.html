@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ArchVista - Visor Cartográfico</title>
+    <title>Aio - Visor Mapas</title>
     <link rel="stylesheet"
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -174,9 +174,9 @@
 </head>
 <body>
 <header>
-    <a href="index.html" class="btn-header">
-        <span>←</span><span class="btn-back-text">&nbsp;Volver</span>
-    </a>
+    <a href="#" id="back-btn" class="btn-header">
+    <span>←</span><span class="btn-back-text">&nbsp;Volver</span>
+</a>
     <div id="map-title">Cargando...</div>
     <a id="btn-osm" href="#" target="_blank" class="btn-header" style="display: none;">
         <span>⇗</span>&nbsp;<span class="btn-osm-text">OpenStreetMap</span><span class="btn-osm-short" style="display:none">OSM</span>
@@ -347,6 +347,26 @@
     }
 
     initMap();
+    (function setupBackButton() {
+        const backBtn = document.getElementById('back-btn');
+        if (!backBtn) return;
+
+        backBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const slugDirArc = getQueryParam('slugDirArc');
+
+            if (slugDirArc) {
+                const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+                window.location.href = target;
+            } else {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }
+        });
+    })();
 </script>
 </body>
 </html>
