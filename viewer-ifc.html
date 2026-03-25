@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Aio - Visor IFC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style-ifc.css" />
+    <script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+    "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.154.0/examples/jsm/controls/OrbitControls.js",
+    "web-ifc-three/IFCLoader.js": "https://unpkg.com/web-ifc-three@0.0.124/IFCLoader.js",
+    "web-ifc": "https://unpkg.com/web-ifc@0.0.56/web-ifc-api.js",
+        "three/examples/jsm/utils/BufferGeometryUtils": "https://unpkg.com/three@0.154.0/examples/jsm/utils/BufferGeometryUtils.js"
+  }
+}
+</script>
+  </head>
+  <body>
+    <div id="loading">
+  <div class="spinner"></div>
+  <p>Cargando modelo IFC...</p>
+</div>
+    <div id="app">
+      <canvas id="three-canvas"></canvas>
+
+      <!-- Panel ayuda / overlay -->
+      <div id="help-overlay" class="help-overlay">
+  <div class="help-card" id="help-card-inner">
+    <h1>Controles</h1>
+
+    <div id="orbit-controls">
+      <p class="ctrl-row"><span class="ctrl-key">Click Izq.</span> Orbitar</p>
+      <p class="ctrl-row"><span class="ctrl-key">Click Der.</span> Panear</p>
+      <p class="ctrl-row"><span class="ctrl-key">Scroll</span> Zoom</p>
+      <p class="ctrl-row"><span class="ctrl-key">R</span> Resetear</p>
+    </div>
+
+    <div id="walk-controls" style="display:none">
+      <p class="ctrl-row"><span class="ctrl-key">Click</span> Bloq. cursor</p>
+      <p class="ctrl-row"><span class="ctrl-key">W A S D</span> Mover</p>
+      <p class="ctrl-row"><span class="ctrl-key">Mouse</span> Mirar</p>
+      <p class="ctrl-row"><span class="ctrl-key">Esc</span> Soltar cursor</p>
+    </div>
+
+    <div id="fly-controls" style="display:none">
+      <p class="ctrl-row"><span class="ctrl-key">Click</span> Bloq. cursor</p>
+      <p class="ctrl-row"><span class="ctrl-key">W A S D</span> Mover</p>
+      <p class="ctrl-row"><span class="ctrl-key">Space/Shift</span> Arriba/Abajo</p>
+      <p class="ctrl-row"><span class="ctrl-key">Mouse</span> Mirar</p>
+      <p class="ctrl-row"><span class="ctrl-key">Esc</span> Soltar cursor</p>
+    </div>
+
+    <div id="ortho-controls" style="display:none">
+      <p class="ctrl-row"><span class="ctrl-key">Drag</span> Panear</p>
+      <p class="ctrl-row"><span class="ctrl-key">Scroll</span> Zoom</p>
+      <p class="ctrl-row"><span class="ctrl-key">R</span> Resetear</p>
+    </div>
+
+    <div class="mode-indicator">Modo: <span id="mode-label">Orbit</span></div>
+  </div>
+</div>
+
+
+      <!-- Barra superior: titulo + botones -->
+      <div id="top-bar">
+        <div id="model-title" class="model-title">Modelo IFC</div>
+        <div class="top-buttons">
+          <button id="back-btn" class="top-btn">Volver</button>
+          <button id="reset-btn" class="top-btn">Resetear</button>
+        </div>
+      </div>
+
+      <!-- Panel VISIBILIDAD IFC -->
+      <div id="ifc-layers-panel" class="layers-panel collapsed">
+        <div class="layers-header">
+          <span>Bounding Box</span>
+          <button id="layers-toggle">&#x25A4;</button>
+        </div>
+        <div class="layers-body" id="layers-body">
+          <div class="section-controls">
+            <div class="section-row">
+              <label for="cut-top">Corte desde arriba</label>
+              <input id="cut-top" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="section-row">
+              <label for="cut-bottom">Corte desde abajo</label>
+              <input id="cut-bottom" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="section-row">
+              <label for="cut-left">Corte desde izquierda</label>
+              <input id="cut-left" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="section-row">
+              <label for="cut-right">Corte desde derecha</label>
+              <input id="cut-right" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="section-row">
+              <label for="cut-front">Corte desde frente</label>
+              <input id="cut-front" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="section-row">
+              <label for="cut-back">Corte desde fondo</label>
+              <input id="cut-back" type="range" min="0" max="100" value="0" />
+            </div>
+            <div class="section-row checkbox-row">
+              <label>
+                <input type="checkbox" id="cut-enabled" checked />
+                Cortes activados
+              </label>
+            </div>
+          </div>
+          <div class="layers-separator"></div>
+          <div id="layers-list">
+            <span class="layers-empty">Capas IFC en desarrollo...</span>
+          </div>
+        </div>
+      </div>
+
+            <!-- Solapa colección unificada -->
+      <div class="collection-nav-container" id="collection-nav" style="display: none;">
+        <div class="coll-side-tab" id="collTab">Colección</div>
+        <div class="coll-panel" id="collPanel">
+          <div class="coll-panel-header">
+            <h2 id="collNameLabel">Navegar</h2>
+          </div>
+          <div id="collItemList"></div>
+        </div>
+      </div>
+
+
+      <!-- Panel fondo / luz / sombras -->
+       <div id="side-controls">
+        <div id="env-panel" class="env-panel">
+          <div class="env-section env-toggle">
+            <span>Fondo / Luz</span>
+          </div>
+          <div class="env-section">
+            <label for="bg-select">Fondo</label>
+            <select id="bg-select">
+              <option value="black">Negro</option>
+              <option value="grey">Gris</option>
+              <option value="gradient" selected>Gradiente</option>
+            </select>
+          </div>
+          <div class="env-section">
+            <label>
+              <input type="checkbox" id="shadows-toggle" checked />
+              Sombras
+            </label>
+          </div>
+          <div class="env-section small">
+            <label for="sun-az">Dir. solar</label>
+            <input id="sun-az" type="range" min="0" max="360" value="220" />
+          </div>
+          <div class="env-section small">
+            <label for="sun-el">Elev. solar</label>
+            <input id="sun-el" type="range" min="5" max="80" value="35" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel estilos -->
+      <div id="style-panel" class="style-panel">
+        <button class="style-btn active" data-style="rendered">Render</button>
+        <button class="style-btn" data-style="clay">Arcilla</button>
+        <button class="style-btn" data-style="wireframe">Wire</button>
+        <button class="style-btn" data-style="xray">Rayos X</button>
+      </div>
+
+      <!-- Panel modos camara -->
+      <div id="mode-panel" class="mode-panel">
+        <span id="mode-label">Orbit</span>
+        <div class="mode-buttons">
+          <button class="cam-btn" data-mode="orbit">1. Orbitar</button>
+          <button class="cam-btn" data-mode="walk">2. Walk</button>
+          <button class="cam-btn" data-mode="fly">3. Vuelo</button>
+          <button class="cam-btn" data-mode="top">4. Vista superior</button>
+          <button id="ortho-toggle" class="cam-btn ortho-toggle">Ortho</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="viewer-ifc.js"></script>
+  </body>
+</html>
