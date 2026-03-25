@@ -796,8 +796,20 @@ function initUI() {
 
   const backBtn = document.getElementById('back-btn');
   if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      window.location.href = 'index.html';
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const slugDirArc = getQueryParam('slugDirArc');
+
+      if (slugDirArc) {
+        const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+        window.location.href = target;
+      } else {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = 'index.html';
+        }
+      }
     });
   }
 
