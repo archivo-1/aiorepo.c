@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIO Archivo-1</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050608">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AIO Repo">
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="thumbnails/icon-192.png">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #050608;
+            --surface: #0d1117;
+            --surface2: #111520;
+            --border: rgba(255,255,255,0.07);
+            --border2: rgba(255,255,255,0.12);
+            --text: #e5e7eb;
+            --muted: #6b7280;
+            --accent: #3b82f6;
+            --accent-dim: rgba(59,130,246,0.15);
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.2rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .logo { display: flex; align-items: baseline; gap: 0.6rem; text-decoration: none; }
+        .logo h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; color: #f9fafb; }
+        .logo span { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.01em; }
+
+        .controls-wrap { display: flex; align-items: center; gap: 1rem; flex: 1; max-width: 600px; }
+        .search-wrap { flex: 2; position: relative; }
+        .search-wrap input {
+            width: 100%; padding: 0.45rem 0.85rem 0.45rem 2.2rem;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); font-size: 0.82rem;
+            outline: none; transition: border-color 0.15s;
+        }
+        .search-wrap input:focus { border-color: rgba(59,130,246,0.45); }
+        .search-wrap svg {
+            position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%);
+            width: 14px; height: 14px; stroke: var(--muted); fill: none; pointer-events: none;
+        }
+
+        .sort-select {
+            flex: 1; background: var(--surface); color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 0.45rem; font-size: 0.82rem; outline: none; cursor: pointer;
+        }
+
+        .filters-container {
+            position: relative;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+        }
+        
+        .filters-container::before {
+            content: "";
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 40px;
+            background: linear-gradient(to right, var(--bg), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .filters-container::after {
+            content: "";
+            position: absolute;
+            right: 0; top: 0; bottom: 0;
+            width: 40px;
+            background: linear-gradient(to left, var(--bg), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .filters { 
+            padding: 0.75rem 2rem 0; 
+            display: flex; 
+            gap: 0.35rem; 
+            flex-wrap: nowrap; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .filters::-webkit-scrollbar { display: none; }
+
+        .filter-btn {
+            display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.32rem 0.8rem; margin-bottom: 0.75rem;
+            font-size: 0.78rem; font-weight: 500; background: transparent; color: var(--muted);
+            border: 1px solid transparent; border-radius: 20px; cursor: pointer; transition: all 0.12s;
+            flex-shrink: 0;
+        }
+        .filter-btn:hover { color: var(--text); border-color: var(--border2); }
+        .filter-btn.active { background: var(--accent-dim); color: #93c5fd; border-color: rgba(59,130,246,0.3); }
+        .tab-count { font-size: 0.65rem; font-weight: 600; background: rgba(255,255,255,0.07); color: var(--muted); padding: 0.1rem 0.42rem; border-radius: 20px; }
+
+        main { flex: 1; padding: 1.75rem 2rem; max-width: 1280px; width: 100%; margin: 0 auto; }
+        .grid-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+        .grid-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+        .collection-section { margin-bottom: 1rem; border-radius: 12px; background: rgba(255,255,255,0.02); overflow: hidden; }
+        .collection-header {
+            width: 100%; padding: 1rem; background: var(--surface); 
+            border: 1px solid var(--border); display: flex; align-items: center; 
+            gap: 1rem; cursor: pointer; transition: background 0.2s;
+            user-select: none;
+        }
+        .collection-header:hover { background: var(--surface2); }
+        .collection-header h2 { 
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; 
+            color: var(--accent); flex: 1; display: flex; align-items: center; gap: 0.5rem;
+            pointer-events: none;
+        }
+        .collection-arrow { font-size: 0.6rem; transition: transform 0.3s; color: var(--muted); transform: rotate(0deg); pointer-events: none; }
+        .collection-content { padding: 1.15rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1.15rem; }
+
+        .collection-section.collapsed .collection-content { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem 1rem 1rem; }
+        .collection-section.collapsed .collection-arrow { transform: rotate(-90deg); }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: all 0.15s; }
+        .card:hover { border-color: rgba(59,130,246,0.4); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .card-thumb { width: 100%; aspect-ratio: 16/9; background: #080c14; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .card-body { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.45rem; flex: 1; }
+        .card-title { font-size: 0.88rem; font-weight: 600; color: #f1f3f5; }
+        .badge { font-size: 0.6rem; font-weight: 600; padding: 0.16rem 0.5rem; border-radius: 20px; text-transform: uppercase; background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); }
+        .card-desc { font-size: 0.77rem; color: var(--muted); line-height: 1.55; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+        .card-footer { padding: 0.65rem 1rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .btn-view { font-size: 0.73rem; font-weight: 500; padding: 0.3rem 0.8rem; background: var(--accent-dim); color: #93c5fd; border: 1px solid rgba(59,130,246,0.28); border-radius: 6px; cursor: pointer; }
+
+        .collapsed .card { flex-direction: row; align-items: center; height: 64px; border-color: transparent; background: transparent; gap: 0.5rem; position: relative; z-index: 10; }
+        .collapsed .card:hover { background: rgba(255,255,255,0.03); transform: none; box-shadow: none; }
+        .collapsed .card-thumb { width: 56px !important; height: 42px !important; flex-shrink: 0; margin-left: 0.5rem; border-radius: 6px; }
+        .collapsed .card-body { padding: 0 0.5rem; flex-direction: row; align-items: center; justify-content: space-between; flex: 1; gap: 0.5rem; }
+        .collapsed .card-desc, .collapsed .card-footer { display: none; }
+        .collapsed .card-title { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+
+        footer { padding: 2rem; border-top: 1px solid var(--border); font-size: 0.7rem; color: #2a3040; text-align: center; }
+
+        @media (max-width: 768px) {
+            header { padding: 1rem; }
+            .filters { padding: 0.75rem 1rem 0; }
+            main { padding: 0.75rem; }
+            .collection-content { padding: 0.5rem; }
+            .collapsed .card-title { max-width: 140px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="logo">
+        <h1>AIO Archivo-1</h1>
+        <span>Galería HTML+JS</span>
+    </a>
+    <div class="controls-wrap">
+        <div class="search-wrap">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="search" placeholder="Buscar por nombre, descripción o colección..." autocomplete="off">
+        </div>
+        <select id="sort-order" class="sort-select">
+            <option value="coleccion">Agrupar por colecciones</option>
+            <option value="az">Alfabético (A-Z)</option>
+            <option value="za">Alfabético (Z-A)</option>
+            <option value="tipo">Agrupar por tipo</option>
+        </select>
+    </div>
+</header>
+
+<div class="filters-container">
+    <div class="filters" id="filters">
+        <button class="filter-btn active" data-cat="all">Todo <span class="tab-count" id="count-all">0</span></button>
+    </div>
+</div>
+
+<main id="main-container">
+    <div class="grid-header">
+        <span class="grid-label" id="grid-label">Cargando ...</span>
+    </div>
+    <div id="grid"></div>
+</main>
+
+<footer>Archivo-1 — <a href="https://github.com/archivo-1/aiorepo">github.com/archivo-1/aiorepo</a></footer>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker Registered"));
+    }
+    
+    let MODELS = [];
+    const CATEGORIAS = ['modelo-3d', 'modelo-2d', 'modelo-BIM', 'pdf', 'video', 'galeria', 'enlace', 'audio','mapa','doc','enlaceEXT','yt/vm'];
+    let activeFilter = 'all';
+    let searchQuery = '';
+    let currentSort = 'coleccion';
+
+    const nombresCategoria = {
+        'modelo-3d': 'Modelo 3D','modelo-2d': 'Modelo 2D','modelo-BIM': 'Modelo BIM', 'pdf': 'PDF', 'video': 'Video',
+        'galeria': 'Galería', 'enlace': 'Enlace','enlaceEXT': 'Enlace ext.','doc': 'Documento','yt/vm': 'Yy - Vm', 'audio': 'Audio', 'mapa': 'Mapa'
+    };
+
+    function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    }
+
+    async function loadContent() {
+        const slugDirArc = getQueryParam('slugDirArc');
+        let url;
+
+        if (slugDirArc) {
+            // Modo DirArc: cargar desde Supabase Edge Function
+            url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+        } else {
+            // Modo clásico local (content.json junto al sitio)
+            url = 'content.json';
+        }
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        // DirArc devuelve array plano; content.json clásico probablemente también.
+        const items = Array.isArray(data) ? data : (data.items || []);
+        return items;
+    }
+
+    loadContent()
+        .then(data => {
+            MODELS = data;
+            buildCategoryButtons();
+            updateCounts();
+            renderGrid();
+        })
+        .catch(err => {
+            console.error('Error cargando contenido:', err);
+            document.getElementById('grid').innerHTML =
+              '<p style="color: var(--muted); text-align: center; padding: 2rem;">Error cargando contenido.</p>';
+        });
+
+    function buildCategoryButtons() {
+        const categoriasPresentes = new Set(MODELS.map(m => m.categoria));
+        const filtersDiv = document.getElementById('filters');
+        CATEGORIAS.forEach(cat => {
+            if (categoriasPresentes.has(cat)) {
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn';
+                btn.dataset.cat = cat;
+                btn.innerHTML = `${nombresCategoria[cat] || cat} <span class="tab-count" id="count-${cat}">0</span>`;
+                filtersDiv.appendChild(btn);
+            }
+        });
+    }
+
+    function updateCounts() {
+        const allEl = document.getElementById('count-all');
+        if (allEl) allEl.textContent = MODELS.length;
+        CATEGORIAS.forEach(cat => {
+            const el = document.getElementById('count-' + cat);
+            if (el) el.textContent = MODELS.filter(m => m.categoria === cat).length;
+        });
+    }
+
+    function toggleCollection(headerElement) {
+        headerElement.closest('.collection-section').classList.toggle('collapsed');
+    }
+
+    function renderGrid() {
+        const gridContainer = document.getElementById('grid');
+        gridContainer.innerHTML = '';
+        const isMobile = window.innerWidth <= 768;
+        
+        let visible = MODELS.filter(m => {
+            const matchesCategory = (activeFilter === 'all' || m.categoria === activeFilter);
+            const query = searchQuery.toLowerCase();
+            const matchesSearch = !searchQuery || 
+                                 (m.nombre || '').toLowerCase().includes(query) || 
+                                 (m.descripcion || '').toLowerCase().includes(query) || 
+                                 (m.coleccion || '').toLowerCase().includes(query);
+            return matchesCategory && matchesSearch;
+        });
+
+        if (currentSort === 'az') visible.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        else if (currentSort === 'za') visible.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        else if (currentSort === 'tipo') visible.sort((a, b) => (a.categoria || '').localeCompare(b.categoria || ''));
+        else if (currentSort === 'coleccion') {
+            visible.sort((a, b) => (a.coleccion || 'Otros').localeCompare(b.coleccion || 'Otros') || a.nombre.localeCompare(b.nombre));
+        }
+
+        document.getElementById('grid-label').textContent = visible.length + ' item' + (visible.length !== 1 ? 's' : '');
+
+        if (visible.length === 0) {
+            gridContainer.innerHTML = '<p style="color: var(--muted); text-align: center; padding: 2rem;">No se encontraron elementos</p>';
+            return;
+        }
+
+        if (currentSort === 'coleccion' || currentSort === 'tipo') {
+            const groupField = currentSort === 'coleccion' ? 'coleccion' : 'categoria';
+            const grupos = [...new Set(visible.map(m => m[groupField] || (groupField === 'coleccion' ? 'Otros' : 'General')))];
+            grupos.forEach(groupName => {
+                const section = document.createElement('div');
+                section.className = 'collection-section';
+                if (isMobile && !searchQuery) section.classList.add('collapsed');
+
+                const displayName = currentSort === 'tipo' ? (nombresCategoria[groupName] || groupName) : groupName;
+                const itemsInGroup = visible.filter(x => (x[groupField] || (groupField === 'coleccion' ? 'Otros' : 'General')) === groupName);
+
+                section.innerHTML = `
+                    <div class="collection-header" onclick="toggleCollection(this)">
+                        <span class="collection-arrow">▼</span>
+                        <h2>${displayName} <span style="font-size:0.6rem; opacity:0.5; font-weight:400;">(${itemsInGroup.length})</span></h2>
+                    </div>
+                    <div class="collection-content"></div>
+                `;
+
+                const contentDiv = section.querySelector('.collection-content');
+                itemsInGroup.forEach(m => contentDiv.appendChild(createCard(m)));
+                gridContainer.appendChild(section);
+            });
+        } else {
+            const standardGrid = document.createElement('div');
+            standardGrid.className = 'collection-content';
+            visible.forEach(m => standardGrid.appendChild(createCard(m)));
+            gridContainer.appendChild(standardGrid);
+        }
+    }
+
+    function createCard(m) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Reenviamos también el slugDirArc para que el viewer cargue el mismo DirArc
+            const slugDirArc = getQueryParam('slugDirArc');
+            const extra = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+            window.location.href = `viewer-${m.visor}.html?id=${encodeURIComponent(m.id)}${extra}`;
+        };
+
+        const thumb = m.thumbnail ? `<img src="${m.thumbnail}" alt="">` : `<div style="color:#1e2535">📁</div>`;
+        card.innerHTML = `
+            <div class="card-thumb">${thumb}</div>
+            <div class="card-body">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap: 0.5rem; width:100%;">
+                    <div class="card-title">${m.nombre}</div>
+                    <span class="badge">${nombresCategoria[m.categoria] || m.categoria}</span>
+                </div>
+                <div class="card-desc">${m.descripcion || 'Sin descripción'}</div>
+            </div>
+            <div class="card-footer">
+                <span style="font-size:0.65rem; color:#4b5563">${m.tamano || ''}</span>
+                <button class="btn-view">Abrir</button>
+            </div>
+        `;
+        return card;
+    }
+
+    document.getElementById('filters').onclick = (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.cat;
+        renderGrid();
+    };
+
+    document.getElementById('search').addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        renderGrid();
+    });
+
+    document.getElementById('sort-order').addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        renderGrid();
+    });
+
+    window.addEventListener('resize', () => {
+        const isMobile = window.innerWidth <= 768;
+        if (window.lastIsMobile !== isMobile) {
+            renderGrid();
+            window.lastIsMobile = isMobile;
+        }
+    });
+</script>
+</body>
+</html>
