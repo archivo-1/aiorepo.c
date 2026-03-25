@@ -113,7 +113,7 @@
         <button class="cam-btn" data-mode="orbit">2 · Órbita 3D</button>
     </div>
 
-    <button id="back-btn" onclick="window.location.href='index.html'">← Volver</button>
+    <button id="back-btn">← Volver</button>
     <button id="reset-btn" onclick="window.resetCamera()">↺ Resetear</button>
 
    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -186,6 +186,27 @@
 
             document.getElementById('collTab').addEventListener('click', () => container.classList.toggle('open'));
         }
+                // Lógica unificada del botón Volver
+        (function setupBackButton() {
+            const backBtn = document.getElementById('back-btn');
+            if (!backBtn) return;
+
+            backBtn.addEventListener('click', () => {
+                const slugDirArc = getQueryParam('slugDirArc');
+
+                if (slugDirArc) {
+                    const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+                    window.location.href = target;
+                } else {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }
+            });
+        })();
+
     </script>
 </body>
 </html>
