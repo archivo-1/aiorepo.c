@@ -164,9 +164,10 @@ async function loadContent() {
   return items;
 }
 
-function buildModelUrl(archivo) {
-  if (/^https?:\/\//i.test(archivo)) return archivo;
-  return archivo;
+function buildModelUrl(archivo, resolvedUrl) {
+  const url = resolvedUrl || archivo || '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return url;
 }
 
 // ---------------------------------------------------------------------
@@ -666,15 +667,30 @@ async function initIfcFromContent() {
     setupCollectionSideNav(items, item);
 
     const archivo = item.archivo || '';
-    const ext = archivo.split('.').pop().toLowerCase();
-    if (ext !== 'ifc') {
+    const resolvedUrl = item.resolvedUrl || '';
+    const ifcUrl = buildModelUrl(archivo, resolvedUrl);
+
+    if (!ifcUrl) {
       if (helpText)
         helpText.textContent =
-          'El archivo no es IFC (extensión: ' + ext + ')';
+          'Este elemento no tiene URL de archivo IFC.';
+      if (loadingOverlay) loadingOverlay.classList.add('hidden');
       return;
     }
 
-    const ifcUrl = buildModelUrl(archivo);
+    const ext = ifcUrl.split('?')[0].split('.').pop().toLowerCase();
+    if (ext !== 'ifc') {
+      if (helpText)
+        helpText.textContent =
+          'El archivo indicado no es .ifc (extensión: ' + ext + ')';
+      if (loadingOverlay) loadingOverlay.classList.add('hidden');
+      return;
+    }
+
+    if (helpText) helpText.textContent = 'Cargando modelo IFC...';
+
+    // Si quieres usar tus wasm locales en lugar de unpkg:
+    // ifcLoader.ifcManager.setWasmPath('./libs/ifc/');
 
     ifcLoader.load(
       ifcUrl,
@@ -743,117 +759,6 @@ async function initIfcFromContent() {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }
 }
-
-// ---------------------------------------------------------------------
-// Controles UI
-// ---------------------------------------------------------------------
-function initUI() {
-  document.querySelectorAll('.cam-btn').forEach((btn) => {
-    const mode = btn.dataset.mode;
-    if (!mode) return;
-
-    if (btn.id === 'ortho-toggle') {
-      btn.addEventListener('click', () => toggleOrtho());
-      return;
-    }
-    if (mode === 'top') {
-      btn.addEventListener('click', () => setCameraMode('ortho'));
-      return;
-    }
-
-    btn.addEventListener('click', () => setCameraMode(mode));
-  });
-
-  document.querySelectorAll('.style-btn').forEach((btn) => {
-    const style = btn.dataset.style;
-    btn.addEventListener('click', () => applyStyle(style));
-  });
-
-  const layersPanel = document.getElementById('ifc-layers-panel');
-  const layersToggle = document.getElementById('layers-toggle');
-  if (layersPanel && layersToggle) {
-    layersPanel.classList.add('collapsed');
-    layersToggle.addEventListener('click', () => {
-      layersPanel.classList.toggle('collapsed');
-    });
-  }
-
-  const resetBtn = document.getElementById('reset-btn');
-  if (resetBtn) resetBtn.addEventListener('click', resetCamera);
-
-  const backBtn = document.getElementById('back-btn');
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      window.location.href = 'index.html';
-    });
-  }
-
-  const bgSelect = document.getElementById('bg-select');
-  if (bgSelect) {
-    bgSelect.addEventListener('change', (e) =>
-      changeBackground(e.target.value)
-    );
-  }
-
-  const shToggle = document.getElementById('shadows-toggle');
-  if (shToggle) {
-    shToggle.addEventListener('change', (e) =>
-      toggleShadows(e.target.checked)
-    );
-  }
-
-  const azInput = document.getElementById('sun-az');
-  const elInput = document.getElementById('sun-el');
-  if (azInput) azInput.addEventListener('input', updateSunFromUI);
-  if (elInput) elInput.addEventListener('input', updateSunFromUI);
-
-  const cutBottom = document.getElementById('cut-bottom');
-  const cutTop = document.getElementById('cut-top');
-  const cutLeft = document.getElementById('cut-left');
-  const cutRight = document.getElementById('cut-right');
-  const cutFront = document.getElementById('cut-front');
-  const cutBack = document.getElementById('cut-back');
-  const cutEnabled = document.getElementById('cut-enabled');
-
-  if (cutBottom) {
-    cutBottom.addEventListener('input', (e) =>
-      updateCutBottom(parseFloat(e.target.value))
-    );
-  }
-  if (cutTop) {
-    cutTop.addEventListener('input', (e) =>
-      updateCutTop(parseFloat(e.target.value))
-    );
-  }
-  if (cutLeft) {
-    cutLeft.addEventListener('input', (e) =>
-      updateCutLeft(parseFloat(e.target.value))
-    );
-  }
-  if (cutRight) {
-    cutRight.addEventListener('input', (e) =>
-      updateCutRight(parseFloat(e.target.value))
-    );
-  }
-  if (cutFront) {
-    cutFront.addEventListener('input', (e) =>
-      updateCutFront(parseFloat(e.target.value))
-    );
-  }
-  if (cutBack) {
-    cutBack.addEventListener('input', (e) =>
-      updateCutBack(parseFloat(e.target.value))
-    );
-  }
-  if (cutEnabled) {
-    cutEnabled.addEventListener('change', (e) =>
-      updateClippingEnabled(e.target.checked)
-    );
-  }
-
-  updateModeUI();
-}
-
 // ---------------------------------------------------------------------
 // Animación / resize / input
 // ---------------------------------------------------------------------
