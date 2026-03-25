@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aio - Visor 3dm</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #050608; color: #f5f5f5; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; }
+
+        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #050608; z-index: 100; gap: 1rem; pointer-events: none; }
+        #loading.hidden { display: none; }
+        .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading p { margin: 0; font-size: 0.9rem; color: #9ca3af; letter-spacing: 0.02em; }
+
+        #overlay { position: fixed; top: 10px; left: 10px; padding: 0.55rem 0.85rem; background: rgba(5,6,8,0.82); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; font-size: 0.75rem; max-width: 200px; pointer-events: none; line-height: 1.7; backdrop-filter: blur(4px); z-index: 10; }
+        #overlay h1 { margin: 0 0 0.3rem 0; font-size: 0.82rem; font-weight: 600; color: #f5f5f5; }
+        .ctrl-row { display: flex; gap: 0.5rem; margin: 0; color: #9ca3af; }
+        .ctrl-key { color: #e5e7eb; font-weight: 500; min-width: 76px; flex-shrink: 0; }
+        .mode-indicator { margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1px solid rgba(255,255,255,0.07); color: #6b7280; font-size: 0.7rem; }
+        .mode-indicator span { color: #3b82f6; font-weight: 600; }
+
+        #layers-panel { position: fixed; top: 10px; right: 130px; width: 190px; background: rgba(10,12,20,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; z-index: 10; backdrop-filter: blur(4px); overflow: hidden; }
+        #layers-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; cursor: pointer; user-select: none; }
+        #layers-header h2 { margin: 0; font-size: 0.72rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+        #layers-chevron { font-size: 0.65rem; color: #6b7280; transition: transform 0.2s; }
+        #layers-panel.collapsed #layers-chevron { transform: rotate(-90deg); }
+        #layers-body { max-height: 40vh; overflow-y: auto; padding: 0 0.75rem 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
+        #layers-panel.collapsed #layers-body { display: none; }
+        .layer-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.7rem; color: #d1d5db; min-height: 26px; }
+        .layer-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 0.5rem; }
+
+        .toggle-switch { position: relative; display: inline-block; width: 32px; height: 18px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track { position: absolute; inset: 0; background: rgba(255,255,255,0.12); border-radius: 18px; transition: background 0.2s; cursor: pointer; }
+        .toggle-track::after { content: ''; position: absolute; width: 12px; height: 12px; left: 3px; top: 3px; background: #6b7280; border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+        .toggle-switch input:checked + .toggle-track { background: rgba(59,130,246,0.5); }
+        .toggle-switch input:checked + .toggle-track::after { transform: translateX(14px); background: #3b82f6; }
+
+        #style-modes { position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 10; }
+        .style-btn { padding: 0.28rem 0.65rem; font-size: 0.7rem; font-weight: 500; background: rgba(10,12,20,0.85); color: #9ca3af; border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; cursor: pointer; backdrop-filter: blur(4px); transition: background 0.12s, color 0.12s; white-space: nowrap; }
+        .style-btn:hover { background: rgba(30,35,60,0.95); color: #e5e7eb; }
+        .style-btn.active { background: rgba(124,58,237,0.25); color: #a78bfa; border-color: rgba(124,58,237,0.5); }
+
+        #cam-modes { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 10; flex-wrap: wrap; justify-content: center; }
+        .cam-btn { padding: 0.38rem 0.7rem; font-size: 0.73rem; font-weight: 500; background: rgba(10,12,20,0.85); color: #9ca3af; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; cursor: pointer; backdrop-filter: blur(4px); transition: background 0.12s, color 0.12s; white-space: nowrap; }
+        .cam-btn:hover { background: rgba(30,35,60,0.95); color: #e5e7eb; }
+        .cam-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; border-color: rgba(59,130,246,0.5); }
+        #ortho-toggle { font-weight: 600; color: #93c5fd; }
+        #ortho-toggle.active { background: rgba(59,130,246,0.3); color: #fff; }
+
+        #side-controls { position: fixed; bottom: 18px; right: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 10; }
+        .panel { padding: 0.6rem 0.8rem; background: rgba(10,12,20,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; backdrop-filter: blur(4px); font-size: 0.72rem; min-width: 170px; }
+        #env-controls { display: flex; flex-direction: column; gap: 0.55rem; }
+        #env-controls label { color: #9ca3af; display: flex; justify-content: space-between; align-items: center; }
+        #env-controls input[type="range"] { width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; appearance: none; cursor: pointer; margin: 3px 0; }
+        #env-controls input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: #3b82f6; border-radius: 50%; }
+        .env-row { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: #9ca3af; }
+        #bg-controls select { width: 100%; background: #111827; color: #f5f5f5; border: 1px solid rgba(255,255,255,0.1); padding: 0.28rem 0.4rem; border-radius: 4px; margin-top: 0.35rem; font-size: 0.7rem; outline: none; }
+
+        #back-btn, #reset-btn { position: fixed; right: 10px; padding: 0.4rem 0.8rem; background: rgba(10,12,20,0.85); color: #f5f5f5; border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; cursor: pointer; backdrop-filter: blur(4px); z-index: 10; font-weight: 500; font-size: 0.75rem; }
+        #back-btn { top: 10px; }
+        #reset-btn { top: 46px; color: #9ca3af; }
+        #back-btn:hover, #reset-btn:hover { background: rgba(25,28,50,0.95); }
+
+        #lock-hint { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); padding: 0.35rem 0.9rem; background: rgba(0,0,0,0.7); border-radius: 20px; font-size: 0.72rem; color: #9ca3af; pointer-events: none; opacity: 0; transition: opacity 0.3s; white-space: nowrap; z-index: 10; }
+        #lock-hint.visible { opacity: 1; }
+
+        #model-title { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); font-size: 0.78rem; font-weight: 500; color: #6b7280; pointer-events: none; z-index: 10; letter-spacing: 0.03em; white-space: nowrap; }
+
+        .collection-nav-container { 
+            position: fixed; 
+            top: 50%; 
+            right: 0; 
+            transform: translateY(-50%);
+            z-index: 900; 
+            display: flex;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (pointer: fine) {
+            .collection-nav-container {
+                right: 14px; 
+            }
+        }
+        
+        .coll-side-tab {
+            background: rgba(0, 0, 0, 0.9);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-right: none;
+            padding: 18px 7px;
+            border-radius: 10px 0 0 10px;
+            cursor: pointer;
+            writing-mode: vertical-rl;
+            text-transform: uppercase;
+            font-size: 0.58rem;
+            font-weight: 800;
+            letter-spacing: 0.15em;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.4);
+            user-select: none;
+            z-index: 2;
+        }
+
+        .coll-panel {
+            background: #0d1117;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid transparent;
+        }
+
+        .collection-nav-container.open .coll-panel {
+            width: 280px;
+            height: 65vh;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            box-shadow: -20px 0 40px rgba(0,0,0,0.8);
+        }
+
+        .collection-nav-container.open .coll-side-tab {
+            border-radius: 0 10px 10px 0; 
+            border-left: none;
+            border-right: 1px solid rgba(59, 130, 246, 0.4);
+            order: 2; 
+        }
+
+        .coll-panel-header { padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); }
+        .coll-panel-header h2 { font-size: 0.65rem; text-transform: uppercase; color: #3b82f6; letter-spacing: 0.1em; margin: 0; }
+
+        .coll-item {
+            display: block;
+            padding: 0.9rem 1.2rem;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .coll-item:hover { background: rgba(59, 130, 246, 0.1); color: #fff; padding-left: 1.5rem; }
+        .coll-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.05); font-weight: 600; border-right: 3px solid #3b82f6; }
+
+        @media (max-width: 600px) {
+            #overlay { display: none; }
+            #model-title { display: none; }
+
+            #back-btn  { top: 8px; right: 8px; padding: 0.3rem 0.55rem; font-size: 0.68rem; }
+            #reset-btn { top: 40px; right: 8px; padding: 0.3rem 0.55rem; font-size: 0.68rem; }
+
+            #layers-panel { top: 8px; left: 8px; right: auto; width: 160px; }
+            #layers-body { max-height: 35vh; }
+
+            #side-controls { bottom: 88px; right: 8px; width: 48px; height: 48px; flex-direction: column; gap: 0; overflow: hidden; transition: width 0.3s, height 0.3s; }
+            #side-controls .panel { min-width: 0; padding: 0; display: none; }
+            #side-controls::before { content: '⚙'; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; font-size: 1.4rem; color: #9ca3af; flex-shrink: 0; }
+            #side-controls:focus-within, #side-controls:hover { width: 200px; height: auto; max-height: 400px; }
+            #side-controls:focus-within::before, #side-controls:hover::before { display: none; }
+            #side-controls:focus-within .panel, #side-controls:hover .panel { display: block; padding: 0.6rem 0.8rem; }
+
+            #style-modes { bottom: 50px; gap: 3px; }
+            .style-btn { padding: 0.22rem 0.42rem; font-size: 0.63rem; }
+
+            #cam-modes { bottom: 6px; left: 0; right: 0; transform: none; width: 100%; padding: 0 6px; gap: 4px; }
+            .cam-btn { padding: 0.3rem 0.4rem; font-size: 0.65rem; flex: 1; text-align: center; }
+
+            #lock-hint { bottom: 100px; }
+
+            .collection-nav-container.open .coll-panel { width: 240px; }
+            .collection-nav-container { right: 0 !important; }
+        }
+
+        @media (min-width: 601px) and (max-width: 900px) {
+            #overlay { max-width: 170px; font-size: 0.7rem; }
+            #layers-panel { right: 100px; width: 165px; }
+            #back-btn  { top: 10px; }
+            #reset-btn { top: 44px; }
+            .cam-btn   { padding: 0.32rem 0.55rem; font-size: 0.7rem; }
+            .style-btn { padding: 0.24rem 0.5rem;  font-size: 0.67rem; }
+        }        
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Cargando modelo...</p>
+    </div>
+
+    <div id="overlay">
+        <h1>Controles</h1>
+        <div id="orbit-controls">
+            <p class="ctrl-row"><span class="ctrl-key">Click Izq.</span> Orbitar</p>
+            <p class="ctrl-row"><span class="ctrl-key">Click Der.</span> Panear</p>
+            <p class="ctrl-row"><span class="ctrl-key">Scroll</span> Zoom</p>
+            <p class="ctrl-row"><span class="ctrl-key">R</span> Resetear</p>
+        </div>
+        <div id="walk-controls" style="display:none">
+            <p class="ctrl-row"><span class="ctrl-key">Click</span> Bloq. cursor</p>
+            <p class="ctrl-row"><span class="ctrl-key">W A S D</span> Mover</p>
+            <p class="ctrl-row"><span class="ctrl-key">Mouse</span> Mirar</p>
+            <p class="ctrl-row"><span class="ctrl-key">Esc</span> Soltar cursor</p>
+        </div>
+        <div id="fly-controls" style="display:none">
+            <p class="ctrl-row"><span class="ctrl-key">Click</span> Bloq. cursor</p>
+            <p class="ctrl-row"><span class="ctrl-key">W A S D</span> Mover</p>
+            <p class="ctrl-row"><span class="ctrl-key">Space/Shift</span> Arriba/Abajo</p>
+            <p class="ctrl-row"><span class="ctrl-key">Mouse</span> Mirar</p>
+            <p class="ctrl-row"><span class="ctrl-key">Esc</span> Soltar cursor</p>
+        </div>
+        <div id="ortho-controls" style="display:none">
+            <p class="ctrl-row"><span class="ctrl-key">Drag</span> Panear</p>
+            <p class="ctrl-row"><span class="ctrl-key">Scroll</span> Zoom</p>
+            <p class="ctrl-row"><span class="ctrl-key">R</span> Resetear</p>
+        </div>
+        <div class="mode-indicator">Modo: <span id="mode-label">Orbita</span></div>
+    </div>
+
+    <div id="model-title"></div>
+
+    <div class="collection-nav-container" id="collection-nav" style="display: none;">
+        <div class="coll-side-tab" id="collTab">Colección</div>
+        <div class="coll-panel" id="collPanel">
+            <div class="coll-panel-header">
+                <h2 id="collNameLabel">Navegar</h2>
+            </div>
+            <div id="collItemList"></div>
+        </div>
+    </div>
+
+    <div id="layers-panel" class="collapsed">
+        <div id="layers-header" onclick="(function(){
+            var p=document.getElementById('layers-panel');
+            p.classList.toggle('collapsed');
+        })()">
+            <h2>Capas</h2>
+            <span id="layers-chevron">&#9660;</span>
+        </div>
+        <div id="layers-body">
+            <div id="layers-list"></div>
+        </div>
+    </div>
+
+    <div id="style-modes">
+        <button class="style-btn active" data-style="rendered">Render</button>
+        <button class="style-btn" data-style="clay">Arcilla</button>
+        <button class="style-btn" data-style="wireframe">Wireframe</button>
+        <button class="style-btn" data-style="xray">Rayos X</button>
+    </div>
+
+    <div id="cam-modes">
+        <button class="cam-btn active" data-mode="orbit">1 · Orbitar</button>
+        <button class="cam-btn" id="ortho-toggle" onclick="toggleOrtho()">&#10697; Ortho</button>
+        <button class="cam-btn" data-mode="walk">2 · Caminar</button>
+        <button class="cam-btn" data-mode="fly">3 · Vuelo</button>
+        <button class="cam-btn" data-mode="ortho">4 · Vista superior</button>
+    </div>
+
+    <div id="side-controls">
+        <div id="bg-controls" class="panel">
+            <label>Fondo</label>
+            <select id="bg-select">
+                <option value="black">Negro</option>
+                <option value="white">Blanco</option>
+                <option value="grey">Gris</option>
+                <option value="sky">Cielo</option>
+                <option value="sunset">Aterdecer</option>
+                <option value="gradient">Gradiente</option>
+            </select>
+        </div>
+        <div id="env-controls" class="panel">
+            <label>Dirección solar <span id="az-val">45°</span></label>
+            <input type="range" id="sun-az" min="0" max="360" value="45">
+            <label>Elevación solar<span id="el-val">45°</span></label>
+            <input type="range" id="sun-el" min="0" max="90" value="45">
+            <div class="env-row">
+                <input type="checkbox" id="toggle-shadows" checked>
+                <span>Activar sombras</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="lock-hint">Click para bloq. cursor — Esc para soltar</div>
+
+    <button id="back-btn" onclick="window.location.href='index.html'">← Volver</button>
+    <button id="reset-btn" onclick="window.resetCamera()">↺ Resetear</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.5/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.5/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.5/examples/js/objects/Sky.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rhino3dm@8.4.0/rhino3dm.min.js"></script>
+    <script src="viewer-3dm.js"></script>
+    <script>
+        document.addEventListener('modchange', function(e) {
+            document.getElementById('orbit-controls').style.display = e.detail === 'orbit' ? '' : 'none';
+            document.getElementById('walk-controls').style.display = e.detail === 'walk' ? '' : 'none';
+            document.getElementById('fly-controls').style.display = e.detail === 'fly' ? '' : 'none';
+            document.getElementById('ortho-controls').style.display = e.detail === 'ortho' ? '' : 'none';
+            const hint = document.getElementById('lock-hint');
+            if (hint) hint.classList.toggle('visible', e.detail === 'walk' || e.detail === 'fly');
+        });
+
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        async function loadContent() {
+            const slugDirArc = getQueryParam('slugDirArc');
+            let url;
+            if (slugDirArc) {
+                url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+            } else {
+                url = 'content.json';
+            }
+            const res = await fetch(url);
+            const data = await res.json();
+            const items = Array.isArray(data) ? data : (data.items || []);
+            return items;
+        }
+
+        (async function() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+
+            if (!id) {
+                console.error("No se encontró el ID en la URL");
+                return;
+            }
+
+            try {
+                const data = await loadContent();
+                const currentItem = data.find(item => item.id === id);
+
+                if (currentItem) {
+                    document.title = `Visor - ${currentItem.nombre}`;
+                    const titleEl = document.getElementById('model-title');
+                    if (titleEl) titleEl.textContent = currentItem.nombre;
+
+                    const path = currentItem.archivo && currentItem.archivo.startsWith('http') 
+                                 ? currentItem.archivo 
+                                 : `models/${currentItem.archivo}`;
+                    
+                    if (window.initViewer) {
+                        window.initViewer(path);
+                    } else {
+                        console.log("Cargando archivo:", path);
+                    }
+
+                    setupCollectionSideNav(data, currentItem);
+                } else {
+                    console.error("Elemento no encontrado en contenido para id:", id);
+                }
+            } catch (err) {
+                console.error("Error inicializando visor:", err);
+            }
+        })();
+
+        function setupCollectionSideNav(allData, currentItem) {
+            const collName = currentItem.coleccion;
+            if (!collName) return;
+
+            const siblings = allData.filter(i => i.coleccion === collName);
+            if (siblings.length <= 1) return;
+
+            const container = document.getElementById('collection-nav');
+            container.style.display = 'flex';
+            
+            const label = document.getElementById('collNameLabel');
+            if (label) label.textContent = collName;
+
+            const itemList = document.getElementById('collItemList');
+            const slugDirArc = getQueryParam('slugDirArc');
+            const extra = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+
+            itemList.innerHTML = siblings.map(i => {
+                const visorType = i.visor || 'media';
+                const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
+                return `
+                    <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
+                        ${i.nombre}
+                    </a>`;
+            }).join('');
+
+            const tab = document.getElementById('collTab');
+            tab.onclick = (e) => {
+                e.stopPropagation();
+                container.classList.toggle('open');
+            };
+
+            document.addEventListener('pointerdown', (e) => {
+                if (!container.contains(e.target) && container.classList.contains('open')) {
+                    container.classList.remove('open');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
