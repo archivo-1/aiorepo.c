@@ -273,7 +273,7 @@
             const geoStyle = { color: "#00f2ff", weight: 4, opacity: 0.9, fillColor: "#00f2ff", fillOpacity: 0.2 };
             
             if (item.archivo) {
-                const path = item.archivo.startsWith('data/') ? item.archivo : `data/${item.archivo}`;
+                const path = item.archivo;
                 fetch(path).then(r => r.json()).then(geoData => {
                     const layer = L.geoJSON(geoData, { 
                         style: geoStyle,
