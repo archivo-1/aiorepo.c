@@ -131,7 +131,7 @@
 
     <header>
         <div class="nav-group">
-            <a href="index.html" class="btn-action">← Volver</a>
+            <a href="#" id="back-btn" class="btn-action">← Volver</a>
             <h1 id="item-title">Cargando...</h1>
         </div>
         <div id="toolbar-actions" class="nav-group"></div>
@@ -381,6 +381,29 @@ ${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
         }
 
         loadContent();
+                // Lógica unificada del botón Volver
+        (function setupBackButton() {
+            const backBtn = document.getElementById('back-btn');
+            if (!backBtn) return;
+
+            backBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const params = new URLSearchParams(window.location.search);
+                const slugDirArc = params.get('slugDirArc');
+
+                if (slugDirArc) {
+                    const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+                    window.location.href = target;
+                } else {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }
+            });
+        })();
+
     </script>
 </body>
 </html>
