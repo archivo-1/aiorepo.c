@@ -571,7 +571,7 @@ const loadingOverlay = document.getElementById('loading');
 if (loadingOverlay) loadingOverlay.classList.remove('hidden');
 
 // ---------------------------------------------------------------------
-// Panel colección (pasa slugDirArc)
+// Panel colección
 // ---------------------------------------------------------------------
 function setupCollectionSideNav(allData, currentItem) {
   const collName = currentItem.coleccion || currentItem.collection;
@@ -623,7 +623,7 @@ function setupCollectionSideNav(allData, currentItem) {
 }
 
 // ---------------------------------------------------------------------
-// Panel capas IFC (placeholder honesto)
+// Panel capas IFC (placeholder)
 // ---------------------------------------------------------------------
 function buildIfcLayersPanel() {
   const list = document.getElementById('layers-list');
@@ -688,9 +688,6 @@ async function initIfcFromContent() {
     }
 
     if (helpText) helpText.textContent = 'Cargando modelo IFC...';
-
-    // Si quieres usar tus wasm locales en lugar de unpkg:
-    // ifcLoader.ifcManager.setWasmPath('./libs/ifc/');
 
     ifcLoader.load(
       ifcUrl,
@@ -759,6 +756,117 @@ async function initIfcFromContent() {
     if (loadingOverlay) loadingOverlay.classList.add('hidden');
   }
 }
+
+// ---------------------------------------------------------------------
+// UI
+// ---------------------------------------------------------------------
+function initUI() {
+  document.querySelectorAll('.cam-btn').forEach((btn) => {
+    const mode = btn.dataset.mode;
+    if (!mode) return;
+
+    if (btn.id === 'ortho-toggle') {
+      btn.addEventListener('click', () => toggleOrtho());
+      return;
+    }
+    if (mode === 'top') {
+      btn.addEventListener('click', () => setCameraMode('ortho'));
+      return;
+    }
+
+    btn.addEventListener('click', () => setCameraMode(mode));
+  });
+
+  document.querySelectorAll('.style-btn').forEach((btn) => {
+    const style = btn.dataset.style;
+    btn.addEventListener('click', () => applyStyle(style));
+  });
+
+  const layersPanel = document.getElementById('ifc-layers-panel');
+  const layersToggle = document.getElementById('layers-toggle');
+  if (layersPanel && layersToggle) {
+    layersPanel.classList.add('collapsed');
+    layersToggle.addEventListener('click', () => {
+      layersPanel.classList.toggle('collapsed');
+    });
+  }
+
+  const resetBtn = document.getElementById('reset-btn');
+  if (resetBtn) resetBtn.addEventListener('click', resetCamera);
+
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  }
+
+  const bgSelect = document.getElementById('bg-select');
+  if (bgSelect) {
+    bgSelect.addEventListener('change', (e) =>
+      changeBackground(e.target.value)
+    );
+  }
+
+  const shToggle = document.getElementById('shadows-toggle');
+  if (shToggle) {
+    shToggle.addEventListener('change', (e) =>
+      toggleShadows(e.target.checked)
+    );
+  }
+
+  const azInput = document.getElementById('sun-az');
+  const elInput = document.getElementById('sun-el');
+  if (azInput) azInput.addEventListener('input', updateSunFromUI);
+  if (elInput) elInput.addEventListener('input', updateSunFromUI);
+
+  const cutBottom = document.getElementById('cut-bottom');
+  const cutTop = document.getElementById('cut-top');
+  const cutLeft = document.getElementById('cut-left');
+  const cutRight = document.getElementById('cut-right');
+  const cutFront = document.getElementById('cut-front');
+  const cutBack = document.getElementById('cut-back');
+  const cutEnabled = document.getElementById('cut-enabled');
+
+  if (cutBottom) {
+    cutBottom.addEventListener('input', (e) =>
+      updateCutBottom(parseFloat(e.target.value))
+    );
+  }
+  if (cutTop) {
+    cutTop.addEventListener('input', (e) =>
+      updateCutTop(parseFloat(e.target.value))
+    );
+  }
+  if (cutLeft) {
+    cutLeft.addEventListener('input', (e) =>
+      updateCutLeft(parseFloat(e.target.value))
+    );
+  }
+  if (cutRight) {
+    cutRight.addEventListener('input', (e) =>
+      updateCutRight(parseFloat(e.target.value))
+    );
+  }
+  if (cutFront) {
+    cutFront.addEventListener('input', (e) =>
+      updateCutFront(parseFloat(e.target.value))
+    );
+  }
+  if (cutBack) {
+    cutBack.addEventListener('input', (e) =>
+      updateCutBack(parseFloat(e.target.value))
+    );
+  }
+  if (cutEnabled) {
+    cutEnabled.addEventListener('change', (e) =>
+      updateClippingEnabled(e.target.checked)
+    );
+  }
+
+  updateModeUI();
+}
+
 // ---------------------------------------------------------------------
 // Animación / resize / input
 // ---------------------------------------------------------------------
