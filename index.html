@@ -224,70 +224,61 @@
     };
 
     function getQueryParam(name) {
-        const params = new URLSearchParams(window.location.search);
-        return params.get(name);
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+async function loadContent() {
+  const slugDirArc = getQueryParam('slugDirArc');
+  let url;
+
+  if (slugDirArc) {
+    // Modo DirArc: ahora esperamos un objeto { slug, title, description, items }
+    url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+  } else {
+    // Modo clásico local (content.json junto al sitio)
+    url = 'content.json';
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (slugDirArc) {
+    // data = { slug, title, description, items }
+    const items = data.items || [];
+    aplicarTituloDirArc(data);  // usamos title real del DirArc
+    return items;
+  } else {
+    // content.json clásico: mantenemos compatibilidad
+    const items = Array.isArray(data) ? data : (data.items || []);
+    aplicarTituloDirArc({ title: null, slug: null, items });
+    return items;
+  }
+}
+
+// Ajusta document.title y el h1 según el DirArc
+function aplicarTituloDirArc(info) {
+  const baseSubtitle = 'Aio Repo C 1.0';
+  const headerTitleEl = document.getElementById('dirarc-title');
+
+  let title = info.title;
+
+  // Si no hay title (ej: modo clásico), usar fallback
+  if (!title) {
+    const slugDirArc = getQueryParam('slugDirArc');
+    if (slugDirArc) {
+      title = slugDirArc;
+    } else {
+      title = 'Aio Repo';
     }
+  }
 
-    async function loadContent() {
-        const slugDirArc = getQueryParam('slugDirArc');
-        let url;
+  document.title = `${title} – ${baseSubtitle}`;
+  if (headerTitleEl) {
+    headerTitleEl.textContent = title;
+  }
+}
 
-        if (slugDirArc) {
-            // Modo DirArc: cargar desde Supabase Edge Function
-            url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
-        } else {
-            // Modo clásico local (content.json junto al sitio)
-            url = 'content.json';
-        }
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        // Intentar extraer metadatos de DirArc si existen
-        // Caso 1: respuesta plana (array de items)
-        if (Array.isArray(data)) {
-            aplicarTituloDirArc({ items: data, title: null, slug: slugDirArc });
-            return data;
-        }
-
-        // Caso 2: objeto con metadatos e items
-        const items = data.items || [];
-        aplicarTituloDirArc({
-            items,
-            title: data.title || data.nombre || null,
-            slug: data.slug || slugDirArc
-        });
-        return items;
-    }
-
-    // Ajusta document.title y el h1 según el DirArc
-    function aplicarTituloDirArc(info) {
-        const slugDirArc = getQueryParam('slugDirArc');
-        const baseSubtitle = 'Aio Repo C 1.0';
-        const headerTitleEl = document.getElementById('dirarc-title');
-
-        let title = info.title;
-
-        // Si no tenemos title explícito, intentamos inferirlo:
-        if (!title) {
-            // 1) A partir del primer item con coleccion (solo heurística)
-            const first = (info.items || [])[0];
-            if (first && first.coleccion) {
-                title = first.coleccion;
-            }
-            // 2) O como fallback, a partir del slug
-            else if (slugDirArc) {
-                title = slugDirArc;
-            } else {
-                title = 'Aio Repo';
-            }
-        }
-
-        document.title = `${title} – ${baseSubtitle}`;
-        if (headerTitleEl) {
-            headerTitleEl.textContent = title;
-        }
-    }
 
     loadContent()
         .then(data => {
