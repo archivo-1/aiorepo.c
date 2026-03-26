@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIO Archivo-1</title>
+    <title>Aio Repo C 1.0</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#050608">
@@ -174,8 +174,8 @@
 
 <header>
     <a href="index.html" class="logo">
-        <h1>AIO Archivo-1</h1>
-        <span>Galería HTML+JS</span>
+        <h1 id="dirarc-title">Aio Repo</h1>
+        <span>Aio Repo C 1.0</span>
     </a>
     <div class="controls-wrap">
         <div class="search-wrap">
@@ -243,9 +243,50 @@
         const res = await fetch(url);
         const data = await res.json();
 
-        // DirArc devuelve array plano; content.json clásico probablemente también.
-        const items = Array.isArray(data) ? data : (data.items || []);
+        // Intentar extraer metadatos de DirArc si existen
+        // Caso 1: respuesta plana (array de items)
+        if (Array.isArray(data)) {
+            aplicarTituloDirArc({ items: data, title: null, slug: slugDirArc });
+            return data;
+        }
+
+        // Caso 2: objeto con metadatos e items
+        const items = data.items || [];
+        aplicarTituloDirArc({
+            items,
+            title: data.title || data.nombre || null,
+            slug: data.slug || slugDirArc
+        });
         return items;
+    }
+
+    // Ajusta document.title y el h1 según el DirArc
+    function aplicarTituloDirArc(info) {
+        const slugDirArc = getQueryParam('slugDirArc');
+        const baseSubtitle = 'Aio Repo C 1.0';
+        const headerTitleEl = document.getElementById('dirarc-title');
+
+        let title = info.title;
+
+        // Si no tenemos title explícito, intentamos inferirlo:
+        if (!title) {
+            // 1) A partir del primer item con coleccion (solo heurística)
+            const first = (info.items || [])[0];
+            if (first && first.coleccion) {
+                title = first.coleccion;
+            }
+            // 2) O como fallback, a partir del slug
+            else if (slugDirArc) {
+                title = slugDirArc;
+            } else {
+                title = 'Aio Repo';
+            }
+        }
+
+        document.title = `${title} – ${baseSubtitle}`;
+        if (headerTitleEl) {
+            headerTitleEl.textContent = title;
+        }
     }
 
     loadContent()
@@ -319,7 +360,7 @@
 
         if (currentSort === 'coleccion' || currentSort === 'tipo') {
             const groupField = currentSort === 'coleccion' ? 'coleccion' : 'categoria';
-            const grupos = [...new Set(visible.map(m => m[groupField] || (groupField === 'coleccion' ? 'Otros' : 'General')))];
+            const grupos = [...new Set(visible.map(m => m[groupField] || (groupField === 'coleccion' ? 'Otros' : 'General'))) ];
             grupos.forEach(groupName => {
                 const section = document.createElement('div');
                 section.className = 'collection-section';
