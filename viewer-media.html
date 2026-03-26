@@ -217,11 +217,11 @@
                 if (item.categoria === 'pdf' || ext === 'pdf') {
                     document.getElementById('zoom-controls').style.display = 'flex';
                     wrapper.innerHTML = '<div id="pdf-render-container"></div>';
-                    initPDF(item.archivo);
+                    initPDF(item.resolved_url || item.archivo);
                 } else if (item.categoria === 'video') {
                     wrapper.innerHTML = `
                         <div class="video-container">
-                            <video controls playsinline autoplay src="${item.archivo}"></video>
+                            <video controls playsinline autoplay src="${item.resolved_url || item.archivo}"></video>
                             <div class="metadata-card">
                                 <h2>Descripción</h2>
                                 <p>${item.descripcion || 'Sin descripción.'}</p>
@@ -237,7 +237,7 @@
                 else if (item.categoria === 'audio' || ['mp3','wav','ogg'].includes(ext)) {
                     wrapper.innerHTML = `
                         <div class="video-container" style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height: 400px;">
-                            <audio controls autoplay src="${item.archivo}" style="width:100%; outline:none;"></audio>
+                            <audio controls autoplay src="${item.resolved_url || item.archivo}" style="width:100%; outline:none;"></audio>
                             <div class="metadata-card" style="width:100%; text-align:left;">
                                 <h2>Descripción</h2>
                                 <p>${item.descripcion || 'Reproduciendo archivo de audio.'}</p>
@@ -246,7 +246,7 @@
                 }
                 // TXT
                 else if (item.categoria === 'txt' || ext === 'txt') {
-                    const txtResponse = await fetch(item.archivo);
+                    const txtResponse = await fetch(item.resolved_url || item.archivo);
                     const content = await txtResponse.text();
                     wrapper.innerHTML = `
                         <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
