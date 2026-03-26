@@ -273,8 +273,8 @@
 
         const geoStyle = { color: "#00f2ff", weight: 4, opacity: 0.9, fillColor: "#00f2ff", fillOpacity: 0.2 };
 
-        if (item.archivo) {
-            const path = item.archivo; // URL absoluta (Dropbox o donde sea)
+        if (item.resolved_url || item.archivo) {
+            const path = item.resolved_url || item.archivo; // URL absoluta (Dropbox o donde sea)
             fetch(path)
                 .then(r => r.json())
                 .then(geoData => {
