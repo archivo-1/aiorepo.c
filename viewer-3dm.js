@@ -411,7 +411,7 @@
             return;
         }
 
-        const filePath = config.archivo;
+        const filePath = config.resolved_url || config.archivo;
         const displayName = config.nombre || filePath;
 
         showLoading('Cargando ' + displayName + '...');
