@@ -228,10 +228,10 @@
                             </div>
                         </div>`;
                 } else if (['jpg','png','webp','jpeg'].includes(ext)) {
-                    wrapper.innerHTML = `<img src="${item.archivo}" style="max-width:100%; margin:20px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">`;
+                    wrapper.innerHTML = `<img src="${item.resolved_url || item.archivo}" style="max-width:100%; margin:20px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">`;
                 } else if (item.categoria === 'enlace') {
                     toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${item.archivo}', '_blank')">Pestaña ↗</button>`;
-                    wrapper.innerHTML = `<div class="iframe-container"><iframe src="${item.archivo}" allowfullscreen></iframe></div>`;
+                    wrapper.innerHTML = `<div class="iframe-container"><iframe src="${item.resolved_url || item.archivo}" allowfullscreen></iframe></div>`;
                 } 
                 // AUDIO
                 else if (item.categoria === 'audio' || ['mp3','wav','ogg'].includes(ext)) {
