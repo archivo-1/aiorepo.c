@@ -667,7 +667,7 @@ async function initIfcFromContent() {
     setupCollectionSideNav(items, item);
 
     const archivo = item.archivo || '';
-    const resolvedUrl = item.resolvedUrl || '';
+    const resolvedUrl = item.resolved_url || item.resolvedUrl || '';
     const ifcUrl = buildModelUrl(archivo, resolvedUrl);
 
     if (!ifcUrl) {
