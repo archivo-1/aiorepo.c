@@ -429,7 +429,7 @@
                 // (pero podrías pasar modelData al setup si hiciera falta)
             }
 
-            const archivo = modelData.archivo;
+            const archivo = modelData.resolved_url || modelData.archivo;
             if (!archivo) throw new Error('El ítem no tiene campo "archivo"');
 
             const url = buildModelUrl(archivo);
