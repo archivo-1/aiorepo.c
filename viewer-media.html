@@ -245,7 +245,7 @@
                         </div>`;
                 }
                 // TXT
-                else if (item.categoria === 'txt' || ext === 'txt') {
+                else if (item.categoria === 'texto' || ext === 'txt') {
                     const txtResponse = await fetch(item.archivo);
                     const content = await txtResponse.text();
                     wrapper.innerHTML = `
