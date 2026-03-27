@@ -61,14 +61,17 @@
             .btn-osm-short { display: inline !important; }
             header { padding: 0 0.5rem; }
         }
-        @media (min-width: 481px) { .btn-osm-short { display: none; }
+        /* FIXED CODE */
+@media (min-width: 481px) { 
+    .btn-osm-short { display: none; } 
+} /* <--- This closing brace was missing */
 
-        #map {
-            flex: 1;
-            width: 100%;
-            background: #050608;
-            position: relative;
-        }
+#map {
+    flex: 1;
+    width: 100%;
+    background: #050608;
+    position: relative;
+}
 
         .leaflet-control-rotate, .leaflet-control-compass { display: none !important; }
 
