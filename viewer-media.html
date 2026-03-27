@@ -261,6 +261,33 @@ ${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
             </pre>
         </div>`;
 }
+
+                // Google Docs / Sheets / Slides (publicados)
+                else if (
+                    item.categoria === 'gdoc' ||
+                    item.categoria === 'gsheet' ||
+                    item.categoria === 'gslide'
+                ) {
+                    const url = item.resolved_url || item.archivo;
+
+                    // Botón para abrir en pestaña externa
+                    toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${url}', '_blank')">Pestaña ↗</button>`;
+
+                    // Texto descriptivo según el tipo
+                    let tipoLabel = 'Documento';
+                    if (item.categoria === 'gsheet') tipoLabel = 'Hoja de cálculo';
+                    if (item.categoria === 'gslide') tipoLabel = 'Presentación';
+
+                    wrapper.innerHTML = `
+                        <div class="iframe-container">
+                            <iframe src="${url}" allowfullscreen></iframe>
+                        </div>
+                        <div class="metadata-card">
+                            <h2>${tipoLabel} publicado en Google</h2>
+                            <p>${item.descripcion || 'Contenido de Google Docs publicado para visualización embebida.'}</p>
+                        </div>`;
+                }
+
                 // YT / Vimeo
                 else if (item.categoria === 'yt/vm') {
                     let embedUrl = item.archivo;
