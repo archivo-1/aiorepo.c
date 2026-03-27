@@ -244,17 +244,23 @@
                             </div>
                         </div>`;
                 }
-                // TXT
-                else if (item.categoria === 'txt' || ext === 'txt') {
-                    const txtResponse = await fetch(item.resolved_url || item.archivo);
-                    const content = await txtResponse.text();
-                    wrapper.innerHTML = `
-                        <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
-                            <pre style="background: var(--panel); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; max-width: 800px; width: 100%; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                // TXT y MD
+else if (item.categoria === 'txt' || ext === 'txt' || item.categoria === 'md' || ext === 'md') {
+    const txtResponse = await fetch(item.resolved_url || item.archivo);
+    const content = await txtResponse.text();
+
+    // Para md mostramos el mismo bloque, pero con clase extra para poder
+    // aplicar estilos de "código" más adelante si quieres.
+    const isMd = item.categoria === 'md' || ext === 'md';
+
+    wrapper.innerHTML = `
+        <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
+            <pre class="${isMd ? 'code-md-block' : ''}"
+                 style="background: var(--panel); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; max-width: 800px; width: 100%; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); overflow-x:auto;">
 ${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
-                            </pre>
-                        </div>`;
-                }
+            </pre>
+        </div>`;
+}
                 // YT / Vimeo
                 else if (item.categoria === 'yt/vm') {
                     let embedUrl = item.archivo;
