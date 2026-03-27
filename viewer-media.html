@@ -258,16 +258,22 @@
                             </div>
                         </div>`;
                 }
-               // TXT y MD
+              // TXT y MD
 else if (item.categoria === 'txt' || ext === 'txt' || item.categoria === 'md' || ext === 'md') {
     const txtResponse = await fetch(item.resolved_url || item.archivo);
     const content = await txtResponse.text();
 
     const isMd = item.categoria === 'md' || ext === 'md';
 
-    let displayContent = content;
+    // 1) escapamos primero el contenido para que no rompa el HTML
+    let safeContent = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // 2) si es md, aplicamos spans sobre el texto ya escapado
     if (isMd) {
-      displayContent = displayContent
+      safeContent = safeContent
         .replace(/(\/\/.*)$/gm, '<span class="cm">$1</span>')
         .replace(/(".*?")/g, '<span class="str">$1</span>');
     }
@@ -276,10 +282,11 @@ else if (item.categoria === 'txt' || ext === 'txt' || item.categoria === 'md' ||
         <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
             <pre class="${isMd ? 'code-md-block' : ''}"
                  style="background: var(--panel); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; max-width: 800px; width: 100%; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); overflow-x:auto;">
-${(isMd ? displayContent : content).replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+${safeContent}
             </pre>
         </div>`;
 }
+
 
                 // Google Docs / Sheets / Slides (publicados)
                 else if (
