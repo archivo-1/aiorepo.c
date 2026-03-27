@@ -213,15 +213,36 @@
     }
     
     let MODELS = [];
-    const CATEGORIAS = ['modelo-3d', 'modelo-2d', 'modelo-BIM', 'pdf', 'video', 'galeria', 'enlace', 'audio','mapa','doc','enlaceEXT','yt/vm'];
+    const CATEGORIAS = [
+  'modelo-3d', 'modelo-2d', 'modelo-BIM',
+  'pdf', 'video', 'audio', 'mapa',
+  'doc', 'txt', 'md',
+  'gdoc', 'gsheet', 'gslide',
+  'galeria', 'enlace', 'enlaceEXT', 'yt/vm'
+];
     let activeFilter = 'all';
     let searchQuery = '';
     let currentSort = 'coleccion';
 
     const nombresCategoria = {
-        'modelo-3d': 'Modelo 3D','modelo-2d': 'Modelo 2D','modelo-BIM': 'Modelo BIM', 'pdf': 'PDF', 'video': 'Video',
-        'galeria': 'Galería', 'enlace': 'Enlace','enlaceEXT': 'Enlace ext.','doc': 'Documento','yt/vm': 'Yy - Vm', 'audio': 'Audio', 'mapa': 'Mapa'
-    };
+  'modelo-3d': 'Modelo 3D',
+  'modelo-2d': 'Modelo 2D',
+  'modelo-BIM': 'Modelo BIM',
+  'pdf': 'PDF',
+  'video': 'Video',
+  'audio': 'Audio',
+  'mapa': 'Mapa',
+  'doc': 'Documento',
+  'txt': 'Texto',
+  'md': 'Código / Markdown',
+  'gdoc': 'Google Doc',
+  'gsheet': 'Google Sheet',
+  'gslide': 'Google Slides',
+  'galeria': 'Galería',
+  'enlace': 'Enlace',
+  'enlaceEXT': 'Enlace ext.',
+  'yt/vm': 'YouTube / Vimeo'
+};
 
     function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
