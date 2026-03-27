@@ -139,6 +139,8 @@
 .code-md-block .kw { color: #93c5fd; font-weight: 600; }   /* palabras clave */
 .code-md-block .str { color: #f97373; }                    /* strings */
 .code-md-block .cm { color: #9ca3af; font-style: italic; } /* comentarios */
+.code-md-block .num { color: #fde68a; } /* números en amarillo suave */
+
     </style>
 </head>
 <body>
@@ -272,11 +274,23 @@ else if (item.categoria === 'txt' || ext === 'txt' || item.categoria === 'md' ||
       .replace(/>/g, "&gt;");
 
     // 2) si es md, aplicamos spans sobre el texto ya escapado
-    if (isMd) {
+        if (isMd) {
       safeContent = safeContent
+        // Comentarios de línea
         .replace(/(\/\/.*)$/gm, '<span class="cm">$1</span>')
-        .replace(/(".*?")/g, '<span class="str">$1</span>');
+        // Strings "..."
+        .replace(/(".*?")/g, '<span class="str">$1</span>')
+        // Palabras clave JS/TS típicas
+        .replace(
+          /\b(const|let|var|function|return|if|else|for|while|async|await|import|from|export|class|new|try|catch|finally|switch|case|break|continue)\b/g,
+          '<span class="kw">$1</span>'
+        )
+        // Booleanos y null
+        .replace(/\b(true|false|null|undefined)\b/g, '<span class="kw">$1</span>')
+        // Números sencillos
+        .replace(/\b(\d+(\.\d+)?)\b/g, '<span class="num">$1</span>');
     }
+
 
     wrapper.innerHTML = `
         <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
