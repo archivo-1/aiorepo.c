@@ -65,22 +65,33 @@
     }
 
        async function loadContent() {
-        if (isLocalSource()) {
-            return getLocalItems();
-        }
+  const source = getQueryParam('source');
 
-        const slugDirArc = getQueryParam('slugDirArc');
-        let url;
-        if (slugDirArc) {
-            url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
-        } else {
-            url = 'content.json';
-        }
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data.items || []);
-        return items;
+  if (source === 'local') {
+    const raw = sessionStorage.getItem('archvista-local-items');
+    if (!raw) return [];
+    try {
+      const items = JSON.parse(raw);
+      return Array.isArray(items) ? items : [];
+    } catch (err) {
+      console.error('No se pudo leer archvista-local-items desde sessionStorage', err);
+      return [];
     }
+  }
+
+  const slugDirArc = getQueryParam('slugDirArc');
+  let url;
+  if (slugDirArc) {
+    url = 'https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=' + encodeURIComponent(slugDirArc);
+  } else {
+    url = 'content.json';
+  }
+
+  const res = await fetch(url);
+  const data = await res.json();
+  const items = Array.isArray(data) ? data : data.items;
+  return items;
+}
 
     function showLoading(msg) {
         const el = document.getElementById('loading');
