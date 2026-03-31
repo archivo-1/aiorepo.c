@@ -467,7 +467,25 @@ function applyAppConfig() {
         .toLowerCase();
     }
 
-    function inferMetaFromFileName(filename) {
+   function inferMetaFromFileName(filename) {
+  const ext = getExt(filename);
+
+  if (currentAppKey === 'media') {
+    let categoria = 'media';
+
+    if (ext === 'pdf') categoria = 'pdf';
+    else if (['mp4', 'webm'].includes(ext)) categoria = 'video';
+    else if (['mp3'].includes(ext)) categoria = 'audio';
+    else if (ext === 'txt') categoria = 'txt';
+    else if (ext === 'md') categoria = 'md';
+
+    return {
+      visor: currentApp.forcedVisor,
+      viewer: currentApp.forcedViewer,
+      categoria
+    };
+  }
+
   return {
     visor: currentApp.forcedVisor,
     viewer: currentApp.forcedViewer,
