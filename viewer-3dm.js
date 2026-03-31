@@ -48,7 +48,27 @@
         return params.get(name);
     }
 
-    async function loadContent() {
+        function getLocalItems() {
+        try {
+            const raw = sessionStorage.getItem('archvista-local-items');
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.warn('No se pudieron leer items locales:', e);
+            return [];
+        }
+    }
+
+    function isLocalSource() {
+        return getQueryParam('source') === 'local';
+    }
+
+       async function loadContent() {
+        if (isLocalSource()) {
+            return getLocalItems();
+        }
+
         const slugDirArc = getQueryParam('slugDirArc');
         let url;
         if (slugDirArc) {
