@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ArchVista - Visor Multimedia</title>
+    <title>Aio Media</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
         :root { --accent: #00f2ff; --bg: #050608; --panel: #0d1117; --header-h: 52px; }
@@ -236,155 +236,170 @@ async function loadItems() {
 }
 
         async function loadContent() {
-            const wrapper = document.getElementById('content-wrapper');
-            const toolbar = document.getElementById('toolbar-actions');
+  const wrapper = document.getElementById('content-wrapper');
+  const toolbar = document.getElementById('toolbar-actions');
 
-            try {
-                const items = await loadItems();
-                const item = items.find(i => i.id === itemId);
-                if (!item) throw new Error('Archivo no encontrado');
+  try {
+    const items = await loadItems();
+    const item = items.find(i => i.id === itemId);
+    if (!item) throw new Error('Archivo no encontrado');
 
-                document.getElementById('item-title').textContent = item.nombre || item.id;
-                setupCollectionSideNav(items, item);
+    document.getElementById('item-title').textContent = item.nombre || item.id;
+    setupCollectionSideNav(items, item);
 
-                const ext = (item.archivo || '').split('.').pop().toLowerCase();
+    // URL final preferida (local o remota)
+    const fileUrl = item.resolved_url || item.resolvedUrl || item.resolvedurl || item.archivo || '';
+    const lowerUrl = String(fileUrl).toLowerCase();
+    const lowerArchivo = String(item.archivo || '').toLowerCase();
 
-                if (!['enlace', 'enlaceEXT', 'yt/vm'].includes(item.categoria)) {
-                    toolbar.innerHTML = `<a href="${item.archivo}" download class="btn-action">Descargar</a>`;
-                }
+    // Extensión aproximada, probando primero la URL "buena"
+    let ext = '';
+    if (lowerUrl.includes('.')) {
+      ext = lowerUrl.split('.').pop().split('?')[0].split('#')[0];
+    } else if (lowerArchivo.includes('.')) {
+      ext = lowerArchivo.split('.').pop().split('?')[0].split('#')[0];
+    }
 
-                if (item.categoria === 'pdf' || ext === 'pdf') {
-                    document.getElementById('zoom-controls').style.display = 'flex';
-                    wrapper.innerHTML = '<div id="pdf-render-container"></div>';
-                    initPDF(item.resolved_url || item.archivo);
-                } else if (item.categoria === 'video') {
-                    wrapper.innerHTML = `
-                        <div class="video-container">
-                            <video controls playsinline autoplay src="${item.resolved_url || item.archivo}"></video>
-                            <div class="metadata-card">
-                                <h2>Descripción</h2>
-                                <p>${item.descripcion || 'Sin descripción.'}</p>
-                            </div>
-                        </div>`;
-                } else if (['jpg','png','webp','jpeg'].includes(ext)) {
-                    wrapper.innerHTML = `<img src="${item.resolved_url || item.archivo}" style="max-width:100%; margin:20px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">`;
-                } else if (item.categoria === 'enlace') {
-                    toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${item.archivo}', '_blank')">Pestaña ↗</button>`;
-                    wrapper.innerHTML = `<div class="iframe-container"><iframe src="${item.resolved_url || item.archivo}" allowfullscreen></iframe></div>`;
-                } 
-                // AUDIO
-                else if (item.categoria === 'audio' || ['mp3','wav','ogg'].includes(ext)) {
-                    wrapper.innerHTML = `
-                        <div class="video-container" style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height: 400px;">
-                            <audio controls autoplay src="${item.resolved_url || item.archivo}" style="width:100%; outline:none;"></audio>
-                            <div class="metadata-card" style="width:100%; text-align:left;">
-                                <h2>Descripción</h2>
-                                <p>${item.descripcion || 'Reproduciendo archivo de audio.'}</p>
-                            </div>
-                        </div>`;
-                }
-              // TXT y MD
-else if (item.categoria === 'txt' || ext === 'txt' || item.categoria === 'md' || ext === 'md') {
-  const txtResponse = await fetch(item.resolved_url || item.archivo);
-  const content = await txtResponse.text();
+    // Para la mayoría de los casos usaremos esta URL final
+    const finalUrl = fileUrl || item.archivo;
 
-  const isMd = item.categoria === 'md' || ext === 'md';
+    if (!['enlace', 'enlaceEXT', 'yt/vm', 'gdoc', 'gsheet', 'gslide'].includes(item.categoria)) {
+      toolbar.innerHTML = `<a href="${finalUrl}" download class="btn-action">Descargar</a>`;
+    }
 
-  // 1) Escapamos primero para que no rompa el HTML
-  let safeContent = content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    // PDF
+    if (item.categoria === 'pdf' || ext === 'pdf') {
+      document.getElementById('zoom-controls').style.display = 'flex';
+      wrapper.innerHTML = '<div id="pdf-render-container"></div>';
+      await initPDF(finalUrl);
+    }
 
-  // 2) Si es md, aplicamos resaltado muy simple
-  if (isMd) {
-    // Comentarios de línea
-    safeContent = safeContent.replace(/(\/\/.*)$/gm, '<span class="cm">$1</span>');
-
-    // Strings "..."
-    safeContent = safeContent.replace(/(".*?")/g, '<span class="str">$1</span>');
-
-    // Palabras clave JS/TS típicas
-    safeContent = safeContent.replace(
-      /\b(const|let|var|function|return|if|else|for|while|async|await|import|from|export|class|new|try|catch|finally|switch|case|break|continue)\b/g,
-      '<span class="kw">$1</span>'
-    );
-
-    // Booleanos y null
-    safeContent = safeContent.replace(/\b(true|false|null|undefined)\b/g, '<span class="kw">$1</span>');
-
-    // Números sencillos
-    safeContent = safeContent.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="num">$1</span>');
-  }
-
-  wrapper.innerHTML = `
-    <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
-      <pre class="${isMd ? 'code-md-block' : ''}"
-           style="background: var(--panel); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; max-width: 800px; width: 100%; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); overflow-x:auto;">
-${safeContent}
-      </pre>
-    </div>`;
-}
-
-
-                // Google Docs / Sheets / Slides (publicados)
-else if (
-    item.categoria === 'gdoc' ||
-    item.categoria === 'gsheet' ||
-    item.categoria === 'gslide'
-) {
-    const url = item.resolved_url || item.archivo;
-
-    // Botón para abrir en pestaña externa
-    toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${url}', '_blank')">Pestaña ↗</button>`;
-
-    wrapper.innerHTML = `
-        <div class="iframe-container">
-            <iframe src="${url}" allowfullscreen></iframe>
+    // VIDEO
+    else if (item.categoria === 'video' || ['mp4', 'webm', 'mov', 'm4v'].includes(ext)) {
+      wrapper.innerHTML = `
+        <div class="video-container">
+          <video controls playsinline autoplay src="${finalUrl}"></video>
+          <div class="metadata-card">
+            <h2>Descripción</h2>
+            <p>${item.descripcion || 'Sin descripción.'}</p>
+          </div>
         </div>`;
+    }
+
+    // IMAGEN
+    else if (['jpg','jpeg','png','webp','gif','bmp','avif','svg'].includes(ext)) {
+      wrapper.innerHTML = `
+        <img src="${finalUrl}"
+             style="max-width:100%; margin:20px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">`;
+    }
+
+    // ENLACE embebible
+    else if (item.categoria === 'enlace') {
+      toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${finalUrl}', '_blank')">Pestaña ↗</button>`;
+      wrapper.innerHTML = `<div class="iframe-container"><iframe src="${finalUrl}" allowfullscreen></iframe></div>`;
+    }
+
+    // AUDIO
+    else if (item.categoria === 'audio' || ['mp3','wav','ogg','m4a','aac','flac'].includes(ext)) {
+      wrapper.innerHTML = `
+        <div class="video-container" style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height: 400px;">
+          <audio controls autoplay src="${finalUrl}" style="width:100%; outline:none;"></audio>
+          <div class="metadata-card" style="width:100%; text-align:left;">
+            <h2>Descripción</h2>
+            <p>${item.descripcion || 'Reproduciendo archivo de audio.'}</p>
+          </div>
+        </div>`;
+    }
+
+    // TXT y MD
+    else if (item.categoria === 'txt' || ext === 'txt' || item.categoria === 'md' || ext === 'md') {
+      const txtResponse = await fetch(finalUrl);
+      const content = await txtResponse.text();
+
+      const isMd = item.categoria === 'md' || ext === 'md';
+
+      let safeContent = content
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      if (isMd) {
+        safeContent = safeContent.replace(/(\/\/.*)$/gm, '<span class="cm">$1</span>');
+        safeContent = safeContent.replace(/(".*?")/g, '<span class="str">$1</span>');
+        safeContent = safeContent.replace(
+          /\b(const|let|var|function|return|if|else|for|while|async|await|import|from|export|class|new|try|catch|finally|switch|case|break|continue)\b/g,
+          '<span class="kw">$1</span>'
+        );
+        safeContent = safeContent.replace(/\b(true|false|null|undefined)\b/g, '<span class="kw">$1</span>');
+        safeContent = safeContent.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="num">$1</span>');
+      }
+
+      wrapper.innerHTML = `
+        <div style="width: 100%; padding: 2rem; display: flex; justify-content: center;">
+          <pre class="${isMd ? 'code-md-block' : ''}"
+               style="background: var(--panel); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb; white-space: pre-wrap; word-wrap: break-word; font-family: monospace; max-width: 800px; width: 100%; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); overflow-x:auto;">
+${safeContent}
+          </pre>
+        </div>`;
+    }
+
+    // Google Docs / Sheets / Slides
+    else if (
+      item.categoria === 'gdoc' ||
+      item.categoria === 'gsheet' ||
+      item.categoria === 'gslide'
+    ) {
+      const url = finalUrl;
+      toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${url}', '_blank')">Pestaña ↗</button>`;
+      wrapper.innerHTML = `
+        <div class="iframe-container">
+          <iframe src="${url}" allowfullscreen></iframe>
+        </div>`;
+    }
+
+    // YT / Vimeo
+    else if (item.categoria === 'yt/vm') {
+      let embedUrl = item.archivo;
+
+      if (embedUrl.includes('youtube.com/watch?v=')) {
+        embedUrl = embedUrl.replace('youtube.com/watch?v=', 'youtube.com/embed/').split('&')[0];
+      } else if (embedUrl.includes('youtu.be/')) {
+        embedUrl = embedUrl.replace('youtu.be/', 'youtube.com/embed/').split('?')[0];
+      } else if (embedUrl.includes('vimeo.com/') && !embedUrl.includes('player.vimeo.com/video/')) {
+        const vimeoId = embedUrl.split('vimeo.com/')[1].split('/')[0];
+        embedUrl = `https://player.vimeo.com/video/${vimeoId}`;
+      }
+
+      toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${item.archivo}', '_blank')">Pestaña ↗</button>`;
+      wrapper.innerHTML = `<div class="iframe-container"><iframe src="${embedUrl}" allowfullscreen></iframe></div>`;
+    }
+
+    // enlaceEXT
+    else if (item.categoria === 'enlaceEXT') {
+      toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${item.archivo}', '_blank')">Pestaña ↗</button>`;
+      wrapper.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:center; height: calc(100vh - var(--header-h)); width:100%; padding: 2rem;">
+          <div class="metadata-card" style="text-align:center; max-width: 450px; width: 100%; display:flex; flex-direction:column; align-items:center; gap:15px;">
+            <h2 style="color:#fff; font-size:1.3rem;">Contenido Externo</h2>
+            <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5;">
+              ${item.descripcion || 'Este contenido está alojado en un sitio externo que requiere ser abierto en una nueva pestaña para su correcta visualización.'}
+            </p>
+            <a href="${item.archivo}" target="_blank" style="margin-top:10px; display:inline-block; background:var(--accent); color:#000; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; text-transform:uppercase;">
+              Abrir en nueva pestaña ↗
+            </a>
+          </div>
+        </div>`;
+    }
+
+    // Fallback
+    else {
+      wrapper.innerHTML = `<p style="padding:2rem;">Formato no reconocido.</p>`;
+    }
+
+  } catch (err) {
+    wrapper.innerHTML = `<p style="padding:2rem;">Error: ${err.message}</p>`;
+  }
 }
-
-
-                // YT / Vimeo
-                else if (item.categoria === 'yt/vm') {
-                    let embedUrl = item.archivo;
-
-                    if (embedUrl.includes('youtube.com/watch?v=')) {
-                        embedUrl = embedUrl.replace('youtube.com/watch?v=', 'youtube.com/embed/').split('&')[0];
-                    } else if (embedUrl.includes('youtu.be/')) {
-                        embedUrl = embedUrl.replace('youtu.be/', 'youtube.com/embed/').split('?')[0];
-                    } else if (embedUrl.includes('vimeo.com/') && !embedUrl.includes('player.vimeo.com/video/')) {
-                        const vimeoId = embedUrl.split('vimeo.com/')[1].split('/')[0];
-                        embedUrl = `https://player.vimeo.com/video/${vimeoId}`;
-                    }
-
-                    toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${item.archivo}', '_blank')">Pestaña ↗</button>`;
-                    wrapper.innerHTML = `<div class="iframe-container"><iframe src="${embedUrl}" allowfullscreen></iframe></div>`;
-                }
-                // enlaceEXT
-                else if (item.categoria === 'enlaceEXT') {
-                    toolbar.innerHTML = `<button class="btn-action" onclick="window.open('${item.archivo}', '_blank')">Pestaña ↗</button>`;
-                    wrapper.innerHTML = `
-                        <div style="display:flex; align-items:center; justify-content:center; height: calc(100vh - var(--header-h)); width:100%; padding: 2rem;">
-                            <div class="metadata-card" style="text-align:center; max-width: 450px; width: 100%; display:flex; flex-direction:column; align-items:center; gap:15px;">
-                                <h2 style="color:#fff; font-size:1.3rem;">Contenido Externo</h2>
-                                <p style="color:#9ca3af; font-size:0.95rem; line-height:1.5;">
-                                    ${item.descripcion || 'Este contenido está alojado en un sitio externo que requiere ser abierto en una nueva pestaña para su correcta visualización.'}
-                                </p>
-                                <a href="${item.archivo}" target="_blank" style="margin-top:10px; display:inline-block; background:var(--accent); color:#000; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:700; font-size:14px; text-transform:uppercase;">
-                                    Abrir en nueva pestaña ↗
-                                </a>
-                            </div>
-                        </div>`;
-                } else {
-                    wrapper.innerHTML = `<p style="padding:2rem;">Formato no reconocido.</p>`;
-                }
-
-            } catch (err) {
-                wrapper.innerHTML = `<p style="padding:2rem;">Error: ${err.message}</p>`;
-            }
-        }
-
         async function initPDF(url) {
             const loadingTask = pdfjsLib.getDocument(url);
             currentPdf = await loadingTask.promise;
