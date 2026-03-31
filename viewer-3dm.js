@@ -431,7 +431,7 @@
             return;
         }
 
-        const filePath = config.resolved_url || config.archivo;
+        const filePath = config.resolvedUrl || config.resolvedurl || config.resolved_url || config.objectUrl || config.localUrl || config.blobUrl || config.archivo;
         const displayName = config.nombre || filePath;
 
         showLoading('Cargando ' + displayName + '...');
