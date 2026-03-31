@@ -7,7 +7,6 @@
   <meta name="theme-color" content="#050608" />
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-
     :root{
       --bg:#050608;
       --panel:#0d1117;
@@ -25,7 +24,6 @@
       --shadow:0 20px 60px rgba(0,0,0,0.45);
       --radius:18px;
     }
-
     html, body {
       margin: 0;
       min-height: 100%;
@@ -36,54 +34,103 @@
       color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
-    body {
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    body { display: flex; flex-direction: column; }
+    main {
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 1.25rem;
+      display: grid;
       gap: 1rem;
-      flex-wrap: wrap;
-      background: rgba(5, 6, 8, 0.82);
-      backdrop-filter: blur(10px);
-      position: sticky;
-      top: 0;
-      z-index: 10;
     }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 0.18rem;
-      min-width: 0;
+    .panel {
+      background: linear-gradient(180deg, rgba(17,21,32,0.92), rgba(13,17,23,0.94));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
     }
-
-    .brand h1 {
+    .hero {
+      padding: 1.25rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .hero-top { display: grid; gap: 0.45rem; }
+    .eyebrow {
+      color: #93c5fd;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+    }
+    .hero h2 {
       margin: 0;
-      font-size: 1rem;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
     }
-
-    .brand p {
+    .hero p {
       margin: 0;
       color: var(--muted);
-      font-size: 0.78rem;
+      max-width: 70ch;
+      line-height: 1.6;
+      font-size: 0.95rem;
     }
-
-    .header-actions {
+    .dropzone {
+      border: 1.5px dashed rgba(148,163,184,0.35);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(59,130,246,0.08), rgba(59,130,246,0.03)),
+        rgba(255,255,255,0.015);
+      min-height: 280px;
+      padding: 1.2rem;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      transition: 0.18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .dropzone.dragover {
+      border-color: rgba(96,165,250,0.8);
+      background:
+        linear-gradient(180deg, rgba(59,130,246,0.14), rgba(59,130,246,0.05)),
+        rgba(255,255,255,0.025);
+      transform: scale(1.005);
+    }
+    .drop-inner {
+      display: grid;
+      gap: 0.85rem;
+      justify-items: center;
+      max-width: 620px;
+    }
+    .drop-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.24);
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.04);
+      font-size: 1.5rem;
+    }
+    .drop-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .drop-copy {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .drop-actions {
       display: flex;
-      align-items: center;
-      gap: 0.6rem;
+      gap: 0.7rem;
       flex-wrap: wrap;
+      justify-content: center;
     }
-
     .btn {
       appearance: none;
       border: 1px solid var(--border-2);
@@ -101,168 +148,31 @@
       gap: 0.45rem;
       min-height: 42px;
     }
-
     .btn:hover {
       border-color: rgba(59,130,246,0.42);
       background: var(--panel-2);
       transform: translateY(-1px);
     }
-
     .btn.primary {
       background: linear-gradient(180deg, #2563eb, #1d4ed8);
       border-color: rgba(96,165,250,0.65);
       color: white;
     }
-
-    .btn.ghost {
-      background: transparent;
-    }
-
-    .btn:disabled {
-      opacity: 0.55;
-      cursor: default;
-      transform: none;
-    }
-
-    main {
-      width: 100%;
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 1.25rem;
-      display: grid;
-      gap: 1rem;
-    }
-
-    .panel {
-      background: linear-gradient(180deg, rgba(17,21,32,0.92), rgba(13,17,23,0.94));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .hero {
-      padding: 1.25rem;
-      display: grid;
-      gap: 1rem;
-    }
-
-    .hero-top {
-      display: grid;
-      gap: 0.45rem;
-    }
-
-    .eyebrow {
-      color: #93c5fd;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-weight: 700;
-    }
-
-    .hero h2 {
-      margin: 0;
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      line-height: 1.08;
-      letter-spacing: -0.03em;
-    }
-
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      max-width: 70ch;
-      line-height: 1.6;
-      font-size: 0.95rem;
-    }
-
-    .dropzone {
-      border: 1.5px dashed rgba(148,163,184,0.35);
-      border-radius: 18px;
-      background:
-        linear-gradient(180deg, rgba(59,130,246,0.08), rgba(59,130,246,0.03)),
-        rgba(255,255,255,0.015);
-      min-height: 280px;
-      padding: 1.2rem;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      transition: 0.18s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .dropzone.dragover {
-      border-color: rgba(96,165,250,0.8);
-      background:
-        linear-gradient(180deg, rgba(59,130,246,0.14), rgba(59,130,246,0.05)),
-        rgba(255,255,255,0.025);
-      transform: scale(1.005);
-    }
-
-    .drop-inner {
-      display: grid;
-      gap: 0.85rem;
-      justify-items: center;
-      max-width: 620px;
-    }
-
-    .drop-icon {
-      width: 68px;
-      height: 68px;
-      border-radius: 18px;
-      border: 1px solid rgba(148,163,184,0.24);
-      display: grid;
-      place-items: center;
-      background: rgba(255,255,255,0.04);
-      font-size: 1.5rem;
-    }
-
-    .drop-title {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .drop-copy {
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .drop-actions {
-      display: flex;
-      gap: 0.7rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .hidden-input {
-      display: none;
-    }
-
+    .btn:disabled { opacity: 0.55; cursor: default; transform: none; }
+    .hidden-input { display: none; }
     .info-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1rem;
     }
-
-    .info-card {
-      padding: 1rem 1rem 1.05rem;
-    }
-
+    .info-card { padding: 1rem 1rem 1.05rem; }
     .info-card h3 {
       margin: 0 0 0.7rem 0;
       font-size: 0.88rem;
       color: #cbd5e1;
       letter-spacing: 0.01em;
     }
-
-    .kv {
-      display: grid;
-      gap: 0.55rem;
-    }
-
+    .kv { display: grid; gap: 0.55rem; }
     .kv-row {
       display: grid;
       grid-template-columns: 130px 1fr;
@@ -271,17 +181,8 @@
       font-size: 0.87rem;
       line-height: 1.45;
     }
-
-    .kv-row .k {
-      color: var(--faint);
-    }
-
-    .kv-row .v {
-      color: var(--text);
-      min-width: 0;
-      word-break: break-word;
-    }
-
+    .kv-row .k { color: var(--faint); }
+    .kv-row .v { color: var(--text); min-width: 0; word-break: break-word; }
     .status {
       padding: 0.95rem 1rem;
       border-radius: 14px;
@@ -291,18 +192,15 @@
       line-height: 1.6;
       color: var(--muted);
     }
-
     .status.ok { color: var(--ok); border-color: rgba(134,239,172,0.24); background: rgba(34,197,94,0.06); }
     .status.warn { color: var(--warn); border-color: rgba(251,191,36,0.22); background: rgba(245,158,11,0.06); }
     .status.error { color: var(--danger); border-color: rgba(252,165,165,0.24); background: rgba(239,68,68,0.06); }
-
     .footer-note {
       color: var(--faint);
       font-size: 0.78rem;
       line-height: 1.6;
       padding: 0 0.15rem;
     }
-
     code {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.82em;
@@ -311,30 +209,15 @@
       background: rgba(255,255,255,0.06);
       color: #dbeafe;
     }
-
     @media (max-width: 760px) {
       main { padding: 0.85rem; }
       .info-grid { grid-template-columns: 1fr; }
       .kv-row { grid-template-columns: 1fr; gap: 0.2rem; }
       .dropzone { min-height: 240px; }
-      .header-actions { width: 100%; }
-      .header-actions .btn { flex: 1 1 auto; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <h1>Local Preview</h1>
-      <p>Prueba archivos locales con los viewers de Aio Repo C, sin indexar URL ni crear DirArc.</p>
-    </div>
-
-    <div class="header-actions">
-      <a class="btn ghost" href="index.html">Abrir Aio Repo C</a>
-      <button class="btn" id="btn-clear">Limpiar preview</button>
-    </div>
-  </header>
-
   <main>
     <section class="panel hero">
       <div class="hero-top">
@@ -351,13 +234,12 @@
           <div class="drop-icon">⤴</div>
           <h3 class="drop-title">Suelta aquí tu archivo</h3>
           <p class="drop-copy">
-            Formatos previstos en esta versión: <code>.ifc</code>, <code>.3dm</code>, <code>.glb</code>, <code>.gltf</code>,
+            Formatos previstos: <code>.ifc</code>, <code>.3dm</code>, <code>.glb</code>, <code>.gltf</code>,
             <code>.dxf</code>, <code>.pdf</code>, imágenes, video, audio y <code>.geojson</code>.
           </p>
 
           <div class="drop-actions">
             <button class="btn primary" id="btn-pick">Elegir archivo</button>
-            <button class="btn" id="btn-open-last" disabled>Abrir último preview</button>
           </div>
 
           <input class="hidden-input" id="file-input" type="file" />
@@ -369,51 +251,25 @@
       <article class="panel info-card">
         <h3>Archivo actual</h3>
         <div class="kv">
-          <div class="kv-row">
-            <div class="k">Nombre</div>
-            <div class="v" id="meta-name">Sin archivo todavía.</div>
-          </div>
-          <div class="kv-row">
-            <div class="k">Tamaño</div>
-            <div class="v" id="meta-size">—</div>
-          </div>
-          <div class="kv-row">
-            <div class="k">Extensión</div>
-            <div class="v" id="meta-ext">—</div>
-          </div>
-          <div class="kv-row">
-            <div class="k">Última modificación</div>
-            <div class="v" id="meta-date">—</div>
-          </div>
+          <div class="kv-row"><div class="k">Nombre</div><div class="v" id="meta-name">Sin archivo todavía.</div></div>
+          <div class="kv-row"><div class="k">Tamaño</div><div class="v" id="meta-size">—</div></div>
+          <div class="kv-row"><div class="k">Extensión</div><div class="v" id="meta-ext">—</div></div>
+          <div class="kv-row"><div class="k">Última modificación</div><div class="v" id="meta-date">—</div></div>
         </div>
       </article>
 
       <article class="panel info-card">
         <h3>Resolución automática</h3>
         <div class="kv">
-          <div class="kv-row">
-            <div class="k">Viewer</div>
-            <div class="v" id="meta-viewer">—</div>
-          </div>
-          <div class="kv-row">
-            <div class="k">Categoría</div>
-            <div class="v" id="meta-category">—</div>
-          </div>
-          <div class="kv-row">
-            <div class="k">ID temporal</div>
-            <div class="v" id="meta-id">—</div>
-          </div>
-          <div class="kv-row">
-            <div class="k">Colección</div>
-            <div class="v"><code>""</code> (vacía)</div>
-          </div>
+          <div class="kv-row"><div class="k">Viewer</div><div class="v" id="meta-viewer">—</div></div>
+          <div class="kv-row"><div class="k">Categoría</div><div class="v" id="meta-category">—</div></div>
+          <div class="kv-row"><div class="k">ID temporal</div><div class="v" id="meta-id">—</div></div>
+          <div class="kv-row"><div class="k">Colección</div><div class="v"><code>""</code> (vacía)</div></div>
         </div>
       </article>
     </section>
 
-    <div class="status" id="status">
-      Esperando un archivo local.
-    </div>
+    <div class="status" id="status">Esperando un archivo local.</div>
 
     <p class="footer-note">
       Se guardan claves temporales en <code>sessionStorage</code> del mismo origen para que el viewer pueda encontrar el item por <code>id</code>.
@@ -422,15 +278,11 @@
   </main>
 
   <script>
-    const STORAGE_DIRARC_KEY = 'archvista-local-dirarc';
     const STORAGE_ITEMS_KEY = 'archvista-local-items';
-    const STORAGE_LAST_VIEWER_URL = 'archvista-local-last-viewer-url';
 
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const btnPick = document.getElementById('btn-pick');
-    const btnClear = document.getElementById('btn-clear');
-    const btnOpenLast = document.getElementById('btn-open-last');
     const statusEl = document.getElementById('status');
 
     const metaName = document.getElementById('meta-name');
@@ -492,33 +344,18 @@
 
     function inferMetaFromFileName(filename) {
       const ext = getExt(filename);
-
-      if (ext === 'pdf') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'pdf', icon: 'PDF' };
-      if (ext === 'txt') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'txt', icon: 'TXT' };
-      if (ext === 'md') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'md', icon: 'MD' };
-
-      if (ext === 'ifc') return { visor: 'ifc', viewer: 'viewer-ifc.html', categoria: 'modelo-BIM', icon: 'IFC' };
-      if (ext === '3dm') return { visor: '3dm', viewer: 'viewer-3dm.html', categoria: 'modelo-3d', icon: '3DM' };
-      if (ext === 'dxf') return { visor: 'dxf', viewer: 'viewer-dxf.html', categoria: 'plano-2d', icon: 'DXF' };
-      if (ext === 'glb' || ext === 'gltf') return { visor: 'glb', viewer: 'viewer-glb.html', categoria: 'modelo-3d', icon: 'GLB' };
-
-      if (['jpg','jpeg','png','webp','gif','svg','bmp','avif'].includes(ext)) {
-        return { visor: 'media', viewer: 'viewer-media.html', categoria: 'imagen', icon: 'IMG' };
-      }
-
-      if (['mp4','webm','mov','m4v'].includes(ext)) {
-        return { visor: 'media', viewer: 'viewer-media.html', categoria: 'video', icon: 'VID' };
-      }
-
-      if (['mp3','wav','ogg','m4a','aac','flac'].includes(ext)) {
-        return { visor: 'media', viewer: 'viewer-media.html', categoria: 'audio', icon: 'AUD' };
-      }
-
-      if (ext === 'geojson' || ext === 'json') {
-        return { visor: 'map', viewer: 'viewer-map.html', categoria: 'mapa', icon: 'MAP' };
-      }
-
-      return { visor: 'media', viewer: 'viewer-media.html', categoria: 'otro', icon: 'FILE' };
+      if (ext === 'pdf') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'pdf' };
+      if (ext === 'txt') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'txt' };
+      if (ext === 'md') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'md' };
+      if (ext === 'ifc') return { visor: 'ifc', viewer: 'viewer-ifc.html', categoria: 'modelo-BIM' };
+      if (ext === '3dm') return { visor: '3dm', viewer: 'viewer-3dm.html', categoria: 'modelo-3d' };
+      if (ext === 'dxf') return { visor: 'dxf', viewer: 'viewer-dxf.html', categoria: 'plano-2d' };
+      if (ext === 'glb' || ext === 'gltf') return { visor: 'glb', viewer: 'viewer-glb.html', categoria: 'modelo-3d' };
+      if (['jpg','jpeg','png','webp','gif','svg','bmp','avif'].includes(ext)) return { visor: 'media', viewer: 'viewer-media.html', categoria: 'imagen' };
+      if (['mp4','webm','mov','m4v'].includes(ext)) return { visor: 'media', viewer: 'viewer-media.html', categoria: 'video' };
+      if (['mp3','wav','ogg','m4a','aac','flac'].includes(ext)) return { visor: 'media', viewer: 'viewer-media.html', categoria: 'audio' };
+      if (ext === 'geojson' || ext === 'json') return { visor: 'map', viewer: 'viewer-map.html', categoria: 'mapa' };
+      return { visor: 'media', viewer: 'viewer-media.html', categoria: 'otro' };
     }
 
     function buildLocalItem(file) {
@@ -540,27 +377,23 @@
         archivo: objectUrl,
         resolvedurl: objectUrl,
         resolvedUrl: objectUrl,
+        resolved_url: objectUrl,
+        localUrl: objectUrl,
+        blobUrl: objectUrl,
+        objectUrl: objectUrl,
+        localFileName: file.name,
+        fileName: file.name,
         descripcion: '',
         tamano: formatBytes(file.size),
         thumbnail: null
       };
 
-      const dirarc = {
-        slug: 'local-preview',
-        title: 'Local Preview',
-        description: 'Contenedor temporal de archivo local',
-        items: [item]
-      };
-
-      return { item, dirarc, meta };
+      return { item, meta };
     }
 
     function persistLocalPreview(payload) {
-      sessionStorage.setItem(STORAGE_DIRARC_KEY, JSON.stringify(payload.dirarc));
-      sessionStorage.setItem(STORAGE_ITEMS_KEY, JSON.stringify(payload.dirarc.items));
-      const viewerUrl = payload.meta.viewer + '?id=' + encodeURIComponent(payload.item.id) + '&source=local';
-      sessionStorage.setItem(STORAGE_LAST_VIEWER_URL, viewerUrl);
-      return viewerUrl;
+      sessionStorage.setItem(STORAGE_ITEMS_KEY, JSON.stringify([payload.item]));
+      return payload.meta.viewer + '?id=' + encodeURIComponent(payload.item.id) + '&source=local';
     }
 
     function fillMeta(file, item, meta) {
@@ -575,46 +408,24 @@
 
     function openLocalFile(file) {
       if (!file) return;
-
       try {
         const payload = buildLocalItem(file);
         fillMeta(file, payload.item, payload.meta);
         const viewerUrl = persistLocalPreview(payload);
-
-        btnOpenLast.disabled = false;
-
         setStatus(
           'Archivo preparado correctamente. Se abrirá <code>' + escapeHtml(payload.meta.viewer) +
           '</code> con un item temporal de origen <code>local</code>.',
           'ok'
         );
-
-        window.location.href = viewerUrl;
+        window.open(
+          viewerUrl,
+          '_blank',
+          'popup=yes,width=1280,height=820,left=60,top=40,resizable=yes,scrollbars=yes'
+        );
       } catch (err) {
         console.error(err);
-        setStatus(
-          'No se pudo preparar el preview local. Revisa la consola del navegador para más detalle.',
-          'error'
-        );
+        setStatus('No se pudo preparar el preview local. Revisa la consola del navegador para más detalle.', 'error');
       }
-    }
-
-    function clearPreview() {
-      sessionStorage.removeItem(STORAGE_DIRARC_KEY);
-      sessionStorage.removeItem(STORAGE_ITEMS_KEY);
-      sessionStorage.removeItem(STORAGE_LAST_VIEWER_URL);
-
-      metaName.textContent = 'Sin archivo todavía.';
-      metaSize.textContent = '—';
-      metaExt.textContent = '—';
-      metaDate.textContent = '—';
-      metaViewer.textContent = '—';
-      metaCategory.textContent = '—';
-      metaId.textContent = '—';
-      fileInput.value = '';
-      btnOpenLast.disabled = true;
-
-      setStatus('Preview local limpiado. Esperando un archivo local.');
     }
 
     btnPick.addEventListener('click', () => fileInput.click());
@@ -622,18 +433,6 @@
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (file) openLocalFile(file);
-    });
-
-    btnClear.addEventListener('click', clearPreview);
-
-    btnOpenLast.addEventListener('click', () => {
-      const url = sessionStorage.getItem(STORAGE_LAST_VIEWER_URL);
-      if (!url) {
-        setStatus('No hay un preview anterior disponible en esta sesión.', 'warn');
-        btnOpenLast.disabled = true;
-        return;
-      }
-      window.location.href = url;
     });
 
     ['dragenter', 'dragover'].forEach(evt => {
@@ -660,35 +459,6 @@
       }
       openLocalFile(file);
     });
-
-    (function initFromSession() {
-      const lastUrl = sessionStorage.getItem(STORAGE_LAST_VIEWER_URL);
-      btnOpenLast.disabled = !lastUrl;
-
-      const rawItems = sessionStorage.getItem(STORAGE_ITEMS_KEY);
-      if (!rawItems) return;
-
-      try {
-        const items = JSON.parse(rawItems);
-        const item = Array.isArray(items) ? items[0] : null;
-        if (!item) return;
-
-        metaName.textContent = item.nombre || '—';
-        metaSize.textContent = item.tamano || '—';
-        metaExt.textContent = getExt(item.nombre) || '—';
-        metaDate.textContent = 'Sesión actual';
-        metaViewer.textContent = 'viewer-' + (item.visor || 'media') + '.html';
-        metaCategory.textContent = item.categoria || '—';
-        metaId.textContent = item.id || '—';
-
-        setStatus(
-          'Se encontró un preview local previo en esta sesión. Puedes reabrirlo con el botón <code>Abrir último preview</code>.',
-          'warn'
-        );
-      } catch (err) {
-        console.warn('No se pudo restaurar preview local previo', err);
-      }
-    })();
   </script>
 </body>
 </html>
