@@ -215,22 +215,42 @@
 
 <script>
     function getQueryParam(name) {
-        const params = new URLSearchParams(window.location.search);
-        return params.get(name);
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+}
+
+function getLocalItems() {
+    try {
+        const raw = sessionStorage.getItem('archvista-local-items');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.warn('No se pudieron leer items locales:', e);
+        return [];
+    }
+}
+
+function isLocalSource() {
+    return getQueryParam('source') === 'local';
+}
+
+async function loadContent() {
+    if (isLocalSource()) {
+        return getLocalItems();
     }
 
-    async function loadContent() {
-        const slugDirArc = getQueryParam('slugDirArc');
-        let url;
-        if (slugDirArc) {
-            url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
-        } else {
-            url = 'content.json';
-        }
-        const res = await fetch(url);
-        const data = await res.json();
-        return Array.isArray(data) ? data : (data.items || []);
+    const slugDirArc = getQueryParam('slugDirArc');
+    let url;
+    if (slugDirArc) {
+        url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+    } else {
+        url = 'content.json';
     }
+    const res = await fetch(url);
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.items || []);
+}
 
     const itemId = getQueryParam('id');
 
@@ -314,62 +334,77 @@
         }
     }
 
-    function setupCollectionSideNav(allData, currentItem) {
-        const collName = currentItem.coleccion || currentItem.collection;
-        if (!collName) return;
+   function setupCollectionSideNav(allData, currentItem) {
+    const collName = currentItem.coleccion || currentItem.collection;
+    if (!collName) return;
 
-        const siblings = allData.filter(i => i.coleccion === collName || i.collection === collName);
-        if (siblings.length <= 1) return;
+    const siblings = allData.filter(i => i.coleccion === collName || i.collection === collName);
+    if (siblings.length <= 1) return;
 
-        const container = document.getElementById('collection-nav');
-        container.style.display = 'flex';
+    const container = document.getElementById('collection-nav');
+    container.style.display = 'flex';
 
-        const itemList = document.getElementById('collItemList');
-        const slugDirArc = getQueryParam('slugDirArc');
-        const extra = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+    const itemList = document.getElementById('collItemList');
 
-        itemList.innerHTML = siblings.map(i => {
-            const visorType = i.visor || 'media';
-            const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
-            return `
-                <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
-                    ${i.nombre || i.id}
-                </a>`;
-        }).join('');
+    const slugDirArc = getQueryParam('slugDirArc');
+    const source = getQueryParam('source');
+    const extraSlug = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+    const extraSource = source ? `&source=${encodeURIComponent(source)}` : '';
+    const extra = `${extraSlug}${extraSource}`;
 
-        document.getElementById('collTab').onclick = (e) => {
-            e.stopPropagation();
-            container.classList.toggle('open');
-        };
+    itemList.innerHTML = siblings.map(i => {
+        const visorType = i.visor || 'media';
+        const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
+        return `
+            <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
+                ${i.nombre || i.id}
+            </a>`;
+    }).join('');
 
-        document.addEventListener('pointerdown', e => {
-            if (!container.contains(e.target) && !e.target.closest('.leaflet-control')) {
-                container.classList.remove('open');
-            }
-        });
-    }
+    document.getElementById('collTab').onclick = (e) => {
+        e.stopPropagation();
+        container.classList.toggle('open');
+    };
+
+    document.addEventListener('pointerdown', e => {
+        if (!container.contains(e.target) && !e.target.closest('.leaflet-control')) {
+            container.classList.remove('open');
+        }
+    });
+}
 
     initMap();
-    (function setupBackButton() {
-        const backBtn = document.getElementById('back-btn');
-        if (!backBtn) return;
+   (function setupBackButton() {
+    const backBtn = document.getElementById('back-btn');
+    if (!backBtn) return;
 
-        backBtn.addEventListener('click', (e) => {
+    if (isLocalSource()) {
+        backBtn.innerHTML = '<span>✕</span><span class="btn-back-text">&nbsp;Cerrar</span>';
+        backBtn.title = 'Cerrar vista previa';
+        backBtn.onclick = (e) => {
             e.preventDefault();
-            const slugDirArc = getQueryParam('slugDirArc');
+            window.close();
+        };
+        return;
+    }
 
-            if (slugDirArc) {
-                const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
-                window.location.href = target;
-            } else {
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.location.href = 'index.html';
-                }
-            }
-        });
-    })();
+    backBtn.innerHTML = '<span>←</span><span class="btn-back-text">&nbsp;Volver</span>';
+    backBtn.title = 'Volver';
+    backBtn.onclick = (e) => {
+        e.preventDefault();
+
+        const slugDirArc = getQueryParam('slugDirArc');
+
+        if (slugDirArc) {
+            const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+            window.location.href = target;
+        } else if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = 'index.html';
+        }
+    };
+})();
 </script>
 </body>
 </html>
