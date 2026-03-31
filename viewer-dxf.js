@@ -12,35 +12,56 @@
 
     // --- Helpers DirArc / URL ------------------------------------------------
 
-    function getQueryParam(name) {
-        const p = new URLSearchParams(window.location.search);
-        return p.get(name);
-    }
+   function getQueryParam(name) {
+  const p = new URLSearchParams(window.location.search);
+  return p.get(name);
+}
 
-    function getModelIdFromQuery() {
-        const id = getQueryParam('id');
-        const file = getQueryParam('file');
-        return id || file;
-    }
+function getModelIdFromQuery() {
+  const id = getQueryParam('id');
+  const file = getQueryParam('file');
+  return id || file;
+}
 
-    async function loadContent() {
-        const slugDirArc = getQueryParam('slugDirArc');
-        let url;
-        if (slugDirArc) {
-            url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
-        } else {
-            url = 'content.json';
-        }
-        const res = await fetch(url, { cache: 'no-cache' });
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : (data.items || []);
-        return items;
-    }
+function getLocalItems() {
+  try {
+    const raw = sessionStorage.getItem('archvista-local-items');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn('No se pudieron leer items locales:', e);
+    return [];
+  }
+}
 
-    function buildModelUrl(archivo) {
-        if (/^https?:\/\//i.test(archivo)) return archivo;
-        return archivo;
-    }
+function isLocalSource() {
+  return getQueryParam('source') === 'local';
+}
+
+async function loadContent() {
+  if (isLocalSource()) {
+    return getLocalItems();
+  }
+
+  const slugDirArc = getQueryParam('slugDirArc');
+  let url;
+
+  if (slugDirArc) {
+    url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+  } else {
+    url = 'content.json';
+  }
+
+  const res = await fetch(url, { cache: 'no-cache' });
+  const data = await res.json();
+  const items = Array.isArray(data) ? data : (data.items || []);
+  return items;
+}
+
+function buildModelUrl(archivo) {
+  return archivo;
+}
 
     // --- Overlay loading -----------------------------------------------------
 
