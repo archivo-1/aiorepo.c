@@ -299,6 +299,38 @@
     let pendingViewerUrl = '';
     let pendingPayload = null;
 
+    const LOCAL_PREVIEW_CHANNEL = 'archvista-local-preview';
+
+window.addEventListener('message', (event) => {
+  try {
+    const data = event.data || {};
+    if (data?.type !== 'ARCHVISTA_REQUEST_LOCAL_ITEM') return;
+    if (!data?.id) return;
+
+    let items = [];
+    try {
+      const raw = sessionStorage.getItem(STORAGE_ITEMS_KEY);
+      items = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(items)) items = [];
+    } catch (_) {
+      items = [];
+    }
+
+    const item = items.find(entry => entry && entry.id === data.id) || null;
+
+    event.source?.postMessage(
+      {
+        type: 'ARCHVISTA_RESPONSE_LOCAL_ITEM',
+        id: data.id,
+        item
+      },
+      '*'
+    );
+  } catch (err) {
+    console.warn('No se pudo responder al viewer local:', err);
+  }
+});
+
     function escapeHtml(value) {
       return String(value ?? '')
         .replaceAll('&', '&amp;')
