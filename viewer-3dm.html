@@ -300,132 +300,160 @@
     <script src="https://cdn.jsdelivr.net/npm/rhino3dm@8.4.0/rhino3dm.min.js"></script>
     <script src="viewer-3dm.js"></script>
     <script>
-        document.addEventListener('modchange', function(e) {
-            document.getElementById('orbit-controls').style.display = e.detail === 'orbit' ? '' : 'none';
-            document.getElementById('walk-controls').style.display = e.detail === 'walk' ? '' : 'none';
-            document.getElementById('fly-controls').style.display = e.detail === 'fly' ? '' : 'none';
-            document.getElementById('ortho-controls').style.display = e.detail === 'ortho' ? '' : 'none';
-            const hint = document.getElementById('lock-hint');
-            if (hint) hint.classList.toggle('visible', e.detail === 'walk' || e.detail === 'fly');
-        });
+  document.addEventListener('modchange', function(e) {
+    document.getElementById('orbit-controls').style.display = e.detail === 'orbit' ? '' : 'none';
+    document.getElementById('walk-controls').style.display = e.detail === 'walk' ? '' : 'none';
+    document.getElementById('fly-controls').style.display = e.detail === 'fly' ? '' : 'none';
+    document.getElementById('ortho-controls').style.display = e.detail === 'ortho' ? '' : 'none';
+    const hint = document.getElementById('lock-hint');
+    if (hint) hint.classList.toggle('visible', e.detail === 'walk' || e.detail === 'fly');
+  });
 
-        function getQueryParam(name) {
-            const params = new URLSearchParams(window.location.search);
-            return params.get(name);
-        }
+  function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
 
-        async function loadContent() {
-            const slugDirArc = getQueryParam('slugDirArc');
-            let url;
-            if (slugDirArc) {
-                url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
-            } else {
-                url = 'content.json';
-            }
-            const res = await fetch(url);
-            const data = await res.json();
-            const items = Array.isArray(data) ? data : (data.items || []);
-            return items;
-        }
+  function getLocalItems() {
+    try {
+      const raw = sessionStorage.getItem('archvista-local-items');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('No se pudieron leer items locales:', e);
+      return [];
+    }
+  }
 
-        (async function() {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
+  function isLocalSource() {
+    return getQueryParam('source') === 'local';
+  }
 
-            if (!id) {
-                console.error("No se encontró el ID en la URL");
-                return;
-            }
+  async function loadContent() {
+    if (isLocalSource()) {
+      return getLocalItems();
+    }
 
-            try {
-                const data = await loadContent();
-                const currentItem = data.find(item => item.id === id);
+    const slugDirArc = getQueryParam('slugDirArc');
+    let url;
 
-                if (currentItem) {
-                    document.title = `Visor - ${currentItem.nombre}`;
-                    const titleEl = document.getElementById('model-title');
-                    if (titleEl) titleEl.textContent = currentItem.nombre;
+    if (slugDirArc) {
+      url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+    } else {
+      url = 'content.json';
+    }
 
-                    const path = currentItem.archivo && currentItem.archivo.startsWith('http') 
-                                 ? currentItem.archivo 
-                                 : `models/${currentItem.archivo}`;
-                    
-                    if (window.initViewer) {
-                        window.initViewer(path);
-                    } else {
-                        console.log("Cargando archivo:", path);
-                    }
+    const res = await fetch(url);
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.items || []);
+    return items;
+  }
 
-                    setupCollectionSideNav(data, currentItem);
-                } else {
-                    console.error("Elemento no encontrado en contenido para id:", id);
-                }
-            } catch (err) {
-                console.error("Error inicializando visor:", err);
-            }
-        })();
+function setupBackButton() {
+  const backBtn = document.getElementById('back-btn');
+  if (!backBtn) return;
 
-        function setupCollectionSideNav(allData, currentItem) {
-            const collName = currentItem.coleccion;
-            if (!collName) return;
+  if (isLocalSource()) {
+    backBtn.textContent = '✕ Cerrar';
+    backBtn.title = 'Cerrar vista previa';
+    backBtn.onclick = () => {
+      window.close();
+    };
+    return;
+  }
 
-            const siblings = allData.filter(i => i.coleccion === collName);
-            if (siblings.length <= 1) return;
+  backBtn.textContent = '← Volver';
+  backBtn.title = 'Volver';
 
-            const container = document.getElementById('collection-nav');
-            container.style.display = 'flex';
-            
-            const label = document.getElementById('collNameLabel');
-            if (label) label.textContent = collName;
+  backBtn.onclick = () => {
+    const slugDirArc = getQueryParam('slugDirArc');
 
-            const itemList = document.getElementById('collItemList');
-            const slugDirArc = getQueryParam('slugDirArc');
-            const extra = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+    if (slugDirArc) {
+      window.location.href = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+    } else if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = 'index.html';
+    }
+  };
+}
 
-            itemList.innerHTML = siblings.map(i => {
-                const visorType = i.visor || 'media';
-                const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
-                return `
-                    <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
-                        ${i.nombre}
-                    </a>`;
-            }).join('');
+  function setupCollectionSideNav(allData, currentItem) {
+    const collName = currentItem.coleccion;
+    if (!collName) return;
 
-            const tab = document.getElementById('collTab');
-            tab.onclick = (e) => {
-                e.stopPropagation();
-                container.classList.toggle('open');
-            };
+    const siblings = allData.filter(i => i.coleccion === collName);
+    if (siblings.length <= 1) return;
 
-            document.addEventListener('pointerdown', (e) => {
-                if (!container.contains(e.target) && container.classList.contains('open')) {
-                    container.classList.remove('open');
-                }
-            });
-                    // Lógica unificada del botón Volver
-        (function setupBackButton() {
-            const backBtn = document.getElementById('back-btn');
-            if (!backBtn) return;
+    const container = document.getElementById('collection-nav');
+    if (!container) return;
+    container.style.display = 'flex';
 
-            backBtn.addEventListener('click', () => {
-                const slugDirArc = getQueryParam('slugDirArc');
+    const label = document.getElementById('collNameLabel');
+    if (label) label.textContent = collName;
 
-                if (slugDirArc) {
-                    // Volver al index con el DirArc de origen
-                    const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
-                    window.location.href = target;
-                } else {
-                    // Fallback si no hay info del DirArc
-                    if (window.history.length > 1) {
-                        window.history.back();
-                    } else {
-                        window.location.href = 'index.html';
-                    }
-                }
-            });
-        })();
+    const itemList = document.getElementById('collItemList');
+    if (!itemList) return;
 
-        }
-    </script>
+    const slugDirArc = getQueryParam('slugDirArc');
+    const source = getQueryParam('source');
+    const extraSlug = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+    const extraSource = source ? `&source=${encodeURIComponent(source)}` : '';
+    const extra = `${extraSlug}${extraSource}`;
+
+    itemList.innerHTML = siblings.map(i => {
+      const visorType = i.visor || 'media';
+      const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
+      return `
+        <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
+          ${i.nombre}
+        </a>
+      `;
+    }).join('');
+
+    const tab = document.getElementById('collTab');
+    if (tab) {
+      tab.onclick = (e) => {
+        e.stopPropagation();
+        container.classList.toggle('open');
+      };
+    }
+
+    document.addEventListener('pointerdown', (e) => {
+      if (!container.contains(e.target) && container.classList.contains('open')) {
+        container.classList.remove('open');
+      }
+    });
+  }
+
+  (async function() {
+    setupBackButton();
+
+    const id = getQueryParam('id');
+    if (!id) {
+      console.error('No se encontró el ID en la URL');
+      return;
+    }
+
+    try {
+      const data = await loadContent();
+      const currentItem = data.find(item => item.id === id);
+
+      if (!currentItem) {
+        console.error('Elemento no encontrado en contenido para id:', id);
+        return;
+      }
+
+      document.title = `Visor - ${currentItem.nombre}`;
+      const titleEl = document.getElementById('model-title');
+      if (titleEl) titleEl.textContent = currentItem.nombre;
+
+      setupCollectionSideNav(data, currentItem);
+    } catch (err) {
+      console.error('Error inicializando visor:', err);
+    }
+  })();
+</script>
 </body>
 </html>
