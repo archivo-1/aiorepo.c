@@ -278,476 +278,648 @@
     </p>
   </main>
 
-  <script>
-  const STORAGE_ITEMS_KEY = 'archvista-local-items';
-
-  const APP_CONFIGS = {
-    '3dm': {
-      appName: 'Aio 3DM',
-      shortName: '3DM',
-      heroTitle: 'Arrastra un archivo .3dm o selecciónalo para abrirlo en el visor Rhino.',
-      heroCopy: 'Esta versión solo admite modelos Rhino locales y los abre directamente en el visor 3DM.',
-      accept: '.3dm',
-      allowedExts: ['3dm'],
-      forcedViewer: 'viewer-3dm.html',
-      forcedVisor: '3dm',
-      forcedCategoria: 'modelo-3d',
-      formatLabel: '<code>.3dm</code>'
-    },
-    'ifc': {
-      appName: 'Aio IFC',
-      shortName: 'IFC',
-      heroTitle: 'Arrastra un archivo .ifc o selecciónalo para abrirlo en el visor BIM.',
-      heroCopy: 'Esta versión solo admite modelos IFC locales y los abre directamente en el visor IFC.',
-      accept: '.ifc',
-      allowedExts: ['ifc'],
-      forcedViewer: 'viewer-ifc.html',
-      forcedVisor: 'ifc',
-      forcedCategoria: 'modelo-BIM',
-      formatLabel: '<code>.ifc</code>'
-    },
-    'dxf': {
-      appName: 'Aio DXF',
-      shortName: 'DXF',
-      heroTitle: 'Arrastra un archivo .dxf o selecciónalo para abrirlo en el visor CAD.',
-      heroCopy: 'Esta versión solo admite archivos DXF locales y los abre directamente en el visor DXF.',
-      accept: '.dxf',
-      allowedExts: ['dxf'],
-      forcedViewer: 'viewer-dxf.html',
-      forcedVisor: 'dxf',
-      forcedCategoria: 'plano-2d',
-      formatLabel: '<code>.dxf</code>'
-    },
-    'map': {
-      appName: 'Aio Mapas',
-      shortName: 'MAP',
-      heroTitle: 'Arrastra un archivo .geojson o selecciónalo para abrirlo en el visor geográfico.',
-      heroCopy: 'Esta versión solo admite archivos geográficos locales y los abre directamente en el visor de mapas.',
-      accept: '.geojson,.json',
-      allowedExts: ['geojson', 'json'],
-      forcedViewer: 'viewer-map.html',
-      forcedVisor: 'map',
-      forcedCategoria: 'mapa',
-      formatLabel: '<code>.geojson</code>, <code>.json</code>'
-    },
-    'media': {
-      appName: 'Aio Media',
-      shortName: 'MEDIA',
-      heroTitle: 'Arrastra un archivo compatible o selecciónalo para abrirlo en el visor de medios.',
-      heroCopy: 'Esta versión admite documentos y medios locales compatibles con Aio Media.',
-      accept: '.webm,.mp4,.mp3,.pdf,.txt,.md',
-      allowedExts: ['webm', 'mp4', 'mp3', 'pdf', 'txt', 'md'],
-      forcedViewer: 'viewer-media.html',
-      forcedVisor: 'media',
-      forcedCategoria: 'media',
-      formatLabel: '<code>.webm</code>, <code>.mp4</code>, <code>.mp3</code>, <code>.pdf</code>, <code>.txt</code>, <code>.md</code>'
-    }
-  };
-
-  function getQueryParam(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
+<script>
+    const STORAGE_ITEMS_KEY = 'archvista-local-items';
+    const APP_CONFIGS = {
+  '3dm': {
+    appName: 'Aio 3DM',
+    heroTitle: 'Arrastra un archivo .3dm o selecciónalo para abrirlo en el visor Rhino.',
+    heroCopy: 'Esta versión solo admite modelos Rhino locales y los abre directamente en el visor 3DM.',
+    accept: '.3dm',
+    allowedExts: ['3dm'],
+    forcedViewer: 'viewer-3dm.html',
+    forcedVisor: '3dm',
+    forcedCategoria: 'modelo-3d',
+    formatLabel: '<code>.3dm</code>'
+  },
+  'ifc': {
+    appName: 'Aio IFC',
+    heroTitle: 'Arrastra un archivo .ifc o selecciónalo para abrirlo en el visor BIM.',
+    heroCopy: 'Esta versión solo admite modelos IFC locales y los abre directamente en el visor IFC.',
+    accept: '.ifc',
+    allowedExts: ['ifc'],
+    forcedViewer: 'viewer-ifc.html',
+    forcedVisor: 'ifc',
+    forcedCategoria: 'modelo-BIM',
+    formatLabel: '<code>.ifc</code>'
+  },
+  'dxf': {
+    appName: 'Aio DXF',
+    heroTitle: 'Arrastra un archivo .dxf o selecciónalo para abrirlo en el visor CAD.',
+    heroCopy: 'Esta versión solo admite archivos DXF locales y los abre directamente en el visor DXF.',
+    accept: '.dxf',
+    allowedExts: ['dxf'],
+    forcedViewer: 'viewer-dxf.html',
+    forcedVisor: 'dxf',
+    forcedCategoria: 'plano-2d',
+    formatLabel: '<code>.dxf</code>'
+  },
+  'map': {
+    appName: 'Aio Mapas',
+    heroTitle: 'Arrastra un archivo .geojson o selecciónalo para abrirlo en el visor geográfico.',
+    heroCopy: 'Esta versión solo admite archivos geográficos locales y los abre directamente en el visor de mapas.',
+    accept: '.geojson,.json',
+    allowedExts: ['geojson', 'json'],
+    forcedViewer: 'viewer-map.html',
+    forcedVisor: 'map',
+    forcedCategoria: 'mapa',
+    formatLabel: '<code>.geojson</code>, <code>.json</code>'
+  },
+  'media': {
+    appName: 'Aio Media',
+    heroTitle: 'Arrastra un archivo compatible o selecciónalo para abrirlo en el visor de medios.',
+    heroCopy: 'Esta versión admite documentos y medios locales compatibles con Aio Media.',
+    accept: '.webm,.mp4,.mp3,.pdf,.txt,.md',
+    allowedExts: ['webm', 'mp4', 'mp3', 'pdf', 'txt', 'md'],
+    forcedViewer: 'viewer-media.html',
+    forcedVisor: 'media',
+    forcedCategoria: 'media',
+    formatLabel: '<code>.webm</code>, <code>.mp4</code>, <code>.mp3</code>, <code>.pdf</code>, <code>.txt</code>, <code>.md</code>'
   }
+};
 
-  const currentAppKey = (getQueryParam('app') || '3dm').toLowerCase();
-  const currentApp = APP_CONFIGS[currentAppKey] || APP_CONFIGS['3dm'];
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
 
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('file-input');
-  const btnPick = document.getElementById('btn-pick');
-  const btnOpenPending = document.getElementById('btn-open-pending');
-  const statusEl = document.getElementById('status');
+const currentAppKey = (getQueryParam('app') || '3dm').toLowerCase();
+const currentApp = APP_CONFIGS[currentAppKey] || APP_CONFIGS['3dm'];
 
-  const metaName = document.getElementById('meta-name');
-  const metaSize = document.getElementById('meta-size');
-  const metaExt = document.getElementById('meta-ext');
-  const metaDate = document.getElementById('meta-date');
-  const metaViewer = document.getElementById('meta-viewer');
-  const metaCategory = document.getElementById('meta-category');
-  const metaId = document.getElementById('meta-id');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const btnPick = document.getElementById('btn-pick');
+    const btnOpenPending = document.getElementById('btn-open-pending');
+    const statusEl = document.getElementById('status');
 
-  const heroEyebrow = document.querySelector('.eyebrow');
-  const heroTitle = document.querySelector('.hero-top h2');
-  const heroCopy = document.querySelector('.hero-top p');
-  const dropTitle = document.querySelector('.drop-title');
-  const dropCopy = document.querySelector('.drop-copy');
+    const metaName = document.getElementById('meta-name');
+    const metaSize = document.getElementById('meta-size');
+    const metaExt = document.getElementById('meta-ext');
+    const metaDate = document.getElementById('meta-date');
+    const metaViewer = document.getElementById('meta-viewer');
+    const metaCategory = document.getElementById('meta-category');
+    const metaId = document.getElementById('meta-id');
 
-  const LOCAL_PREVIEW_CHANNEL = 'archvista-local-preview';
+    const heroEyebrow = document.querySelector('.eyebrow');
+    const heroTitle = document.querySelector('.hero-top h2');
+    const heroCopy = document.querySelector('.hero-top p');
+    const dropTitle = document.querySelector('.drop-title');
+    const dropCopy = document.querySelector('.drop-copy');
 
-  if (btnOpenPending) {
-    btnOpenPending.hidden = true;
-    btnOpenPending.style.display = 'none';
-  }
+    let reservedViewerWindow = null;
+    let pendingViewerUrl = '';
+    let pendingPayload = null;
 
-  window.addEventListener('message', (event) => {
+    const LOCAL_PREVIEW_CHANNEL = 'archvista-local-preview';
+
+window.addEventListener('message', (event) => {
+  try {
+    const data = event.data || {};
+    if (data?.type !== 'ARCHVISTA_REQUEST_LOCAL_ITEM') return;
+    if (!data?.id) return;
+
+    let items = [];
     try {
-      const data = event.data || {};
-      if (data?.type !== 'ARCHVISTA_REQUEST_LOCAL_ITEM') return;
-      if (!data?.id) return;
-
-      let items = [];
-      try {
-        const raw = sessionStorage.getItem(STORAGE_ITEMS_KEY);
-        items = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(items)) items = [];
-      } catch (_) {
-        items = [];
-      }
-
-      const item = items.find(entry => entry && entry.id === data.id) || null;
-
-      event.source?.postMessage(
-        {
-          type: 'ARCHVISTA_RESPONSE_LOCAL_ITEM',
-          id: data.id,
-          item
-        },
-        '*'
-      );
-    } catch (err) {
-      console.warn('No se pudo responder al viewer local:', err);
-    }
-  });
-
-  function applyAppConfig() {
-    document.title = currentApp.appName + ' · Aio Repo C';
-
-    if (heroEyebrow) heroEyebrow.textContent = 'Abrir archivo local';
-    if (heroTitle) heroTitle.textContent = currentApp.heroTitle;
-    if (heroCopy) heroCopy.textContent = currentApp.heroCopy;
-    if (dropTitle) dropTitle.textContent = 'Suelta aquí tu archivo';
-    if (dropCopy) {
-      dropCopy.innerHTML = 'Formatos admitidos: ' + currentApp.formatLabel + '.';
+      const raw = sessionStorage.getItem(STORAGE_ITEMS_KEY);
+      items = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(items)) items = [];
+    } catch (_) {
+      items = [];
     }
 
-    if (fileInput) {
-      fileInput.setAttribute('accept', currentApp.accept);
+    const item = items.find(entry => entry && entry.id === data.id) || null;
+
+    event.source?.postMessage(
+      {
+        type: 'ARCHVISTA_RESPONSE_LOCAL_ITEM',
+        id: data.id,
+        item
+      },
+      '*'
+    );
+  } catch (err) {
+    console.warn('No se pudo responder al viewer local:', err);
+  }
+});
+
+function applyAppConfig() {
+  document.title = currentApp.appName + ' · Aio Repo C';
+
+  if (heroEyebrow) heroEyebrow.textContent = 'Abrir archivo local';
+  if (heroTitle) heroTitle.textContent = currentApp.heroTitle;
+  if (heroCopy) heroCopy.textContent = currentApp.heroCopy;
+  if (dropTitle) dropTitle.textContent = 'Suelta aquí tu archivo';
+  if (dropCopy) {
+    dropCopy.innerHTML = 'Formatos admitidos: ' + currentApp.formatLabel + '.';
+  }
+
+  if (fileInput) {
+    fileInput.setAttribute('accept', currentApp.accept);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  }
+}
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
     }
-  }
 
-  function injectSuiteSwitcher() {
-    if (document.getElementById('suite-switcher')) return;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      #suite-switcher {
-        position: fixed;
-        top: 50%;
-        right: 14px;
-        transform: translateY(-50%);
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px 8px;
-        border-radius: 16px;
-        background: rgba(7, 10, 14, 0.88);
-        border: 1px solid rgba(255,255,255,0.08);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.28);
-      }
-
-      .suite-switcher-label {
-        font-size: 10px;
-        color: rgba(255,255,255,0.45);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        text-align: center;
-        padding-bottom: 2px;
-      }
-
-      .suite-switcher-btn {
-        width: 58px;
-        min-height: 34px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(255,255,255,0.03);
-        color: rgba(255,255,255,0.82);
-        border-radius: 10px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        cursor: pointer;
-        transition: all 0.18s ease;
-      }
-
-      .suite-switcher-btn:hover {
-        border-color: rgba(255,255,255,0.22);
-        color: #fff;
-        background: rgba(255,255,255,0.08);
-      }
-
-      .suite-switcher-btn.active {
-        background: rgba(255,255,255,0.14);
-        color: #fff;
-        border-color: rgba(255,255,255,0.25);
-      }
-
-      @media (max-width: 720px) {
-        #suite-switcher {
-          top: auto;
-          bottom: 12px;
-          right: 12px;
-          left: 12px;
-          transform: none;
-          flex-direction: row;
-          justify-content: center;
-          align-items: center;
-          flex-wrap: wrap;
-          border-radius: 14px;
-          padding: 8px;
-        }
-
-        .suite-switcher-label {
-          width: 100%;
-          margin-bottom: 2px;
-        }
-
-        .suite-switcher-btn {
-          flex: 1 1 auto;
-          min-width: 56px;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    const switcher = document.createElement('nav');
-    switcher.id = 'suite-switcher';
-    switcher.setAttribute('aria-label', 'Cambiar app de la suite');
-
-    const label = document.createElement('div');
-    label.className = 'suite-switcher-label';
-    label.textContent = 'Suite';
-    switcher.appendChild(label);
-
-    Object.entries(APP_CONFIGS).forEach(([key, cfg]) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'suite-switcher-btn' + (key === currentAppKey ? ' active' : '');
-      btn.textContent = cfg.shortName || cfg.appName;
-      btn.title = cfg.appName;
-
-      btn.addEventListener('click', () => {
-        if (key === currentAppKey) return;
-        const target = 'local-preview.html?app=' + encodeURIComponent(key);
-        window.location.href = target;
-      });
-
-      switcher.appendChild(btn);
-    });
-
-    document.body.appendChild(switcher);
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-
-  function setStatus(text, type = '') {
-    statusEl.className = 'status' + (type ? ' ' + type : '');
-    statusEl.innerHTML = text;
-  }
-
-  function formatBytes(bytes) {
-    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let size = bytes;
-    let unit = 0;
-    while (size >= 1024 && unit < units.length - 1) {
-      size /= 1024;
-      unit++;
+    function setStatus(text, type = '') {
+      statusEl.className = 'status' + (type ? ' ' + type : '');
+      statusEl.innerHTML = text;
     }
-    return (size >= 10 || unit === 0 ? size.toFixed(0) : size.toFixed(1)) + ' ' + units[unit];
-  }
 
-  function formatDate(ts) {
-    if (!ts) return '—';
-    const d = new Date(ts);
-    if (Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleString('es-CL');
-  }
-
-  function getExt(filename) {
-    const clean = String(filename || '').trim().toLowerCase();
-    if (!clean.includes('.')) return '';
-    return clean.split('.').pop();
-  }
-
-  function slugify(name) {
-    return String(name || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9._-]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase();
-  }
-
-  function inferMetaFromFileName(filename) {
-    const ext = getExt(filename);
-
-    if (currentAppKey === 'media') {
-      let categoria = 'media';
-
-      if (ext === 'pdf') categoria = 'pdf';
-      else if (['mp4', 'webm'].includes(ext)) categoria = 'video';
-      else if (['mp3'].includes(ext)) categoria = 'audio';
-      else if (ext === 'txt') categoria = 'txt';
-      else if (ext === 'md') categoria = 'md';
-
-      return {
-        visor: currentApp.forcedVisor,
-        viewer: currentApp.forcedViewer,
-        categoria
-      };
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let size = bytes;
+      let unit = 0;
+      while (size >= 1024 && unit < units.length - 1) {
+        size /= 1024;
+        unit++;
+      }
+      return (size >= 10 || unit === 0 ? size.toFixed(0) : size.toFixed(1)) + ' ' + units[unit];
     }
+
+    function formatDate(ts) {
+      if (!ts) return '—';
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) return '—';
+      return d.toLocaleString('es-CL');
+    }
+
+    function getExt(filename) {
+      const clean = String(filename || '').trim().toLowerCase();
+      if (!clean.includes('.')) return '';
+      return clean.split('.').pop();
+
+
+
+
+
+
+    }
+
+
+    function slugify(name) {
+      return String(name || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase();
+
+    }
+
+   function inferMetaFromFileName(filename) {
+  const ext = getExt(filename);
+
+
+
+  if (currentAppKey === 'media') {
+    let categoria = 'media';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    if (ext === 'pdf') categoria = 'pdf';
+    else if (['mp4', 'webm'].includes(ext)) categoria = 'video';
+    else if (['mp3'].includes(ext)) categoria = 'audio';
+    else if (ext === 'txt') categoria = 'txt';
+    else if (ext === 'md') categoria = 'md';
+
+
+
 
     return {
       visor: currentApp.forcedVisor,
       viewer: currentApp.forcedViewer,
-      categoria: currentApp.forcedCategoria
+      categoria
     };
   }
 
-  function validateFileForCurrentApp(file) {
-    const ext = getExt(file?.name || '');
-    return currentApp.allowedExts.includes(ext);
-  }
 
-  function buildLocalItem(file) {
-    const meta = inferMetaFromFileName(file.name);
-    const objectUrl = URL.createObjectURL(file);
-    const safeName = slugify(file.name.replace(/\.[^.]+$/, '')) || 'archivo';
-    const id = 'local-' + Date.now() + '-' + safeName;
 
-    const item = {
-      id,
-      itemid: id,
-      nombre: file.name,
-      titulo: file.name,
-      visor: meta.visor,
-      categoria: meta.categoria,
-      coleccion: '',
-      collection: '',
-      source: 'local',
-      archivo: objectUrl,
-      resolvedurl: objectUrl,
-      resolvedUrl: objectUrl,
-      resolved_url: objectUrl,
-      localUrl: objectUrl,
-      blobUrl: objectUrl,
-      objectUrl: objectUrl,
-      localFileName: file.name,
-      fileName: file.name,
-      descripcion: '',
-      tamano: formatBytes(file.size),
-      thumbnail: null
-    };
 
-    return { item, meta };
-  }
 
-  function persistLocalPreview(payload) {
-    sessionStorage.setItem(STORAGE_ITEMS_KEY, JSON.stringify([payload.item]));
-    return payload.meta.viewer + '?id=' + encodeURIComponent(payload.item.id) + '&source=local&app=' + encodeURIComponent(currentAppKey);
-  }
 
-  function fillMeta(file, item, meta) {
-    metaName.textContent = file.name || '—';
-    metaSize.textContent = formatBytes(file.size);
-    metaExt.textContent = getExt(file.name) || '—';
-    metaDate.textContent = formatDate(file.lastModified);
-    metaViewer.textContent = meta.viewer;
-    metaCategory.textContent = item.categoria;
-    metaId.textContent = item.id;
-  }
 
-  function openViewerInSameWindow(viewerUrl, meta) {
-    setStatus(
-      'Archivo preparado correctamente. Abriendo <code>' + escapeHtml(meta.viewer) +
-      '</code> en esta misma ventana.',
-      'ok'
-    );
 
-    window.location.href = viewerUrl;
-  }
+  return {
+    visor: currentApp.forcedVisor,
+    viewer: currentApp.forcedViewer,
+    categoria: currentApp.forcedCategoria
+  };
+}
 
-  function prepareLocalPreview(file) {
-    const payload = buildLocalItem(file);
-    fillMeta(file, payload.item, payload.meta);
-    const viewerUrl = persistLocalPreview(payload);
-    return { payload, viewerUrl };
-  }
+function validateFileForCurrentApp(file) {
+  const ext = getExt(file?.name || '');
+  return currentApp.allowedExts.includes(ext);
+}
 
-  function openLocalFile(file) {
-    if (!file) return;
+    function buildLocalItem(file) {
+      const meta = inferMetaFromFileName(file.name);
+      const objectUrl = URL.createObjectURL(file);
+      const safeName = slugify(file.name.replace(/\.[^.]+$/, '')) || 'archivo';
+      const id = 'local-' + Date.now() + '-' + safeName;
 
-    if (!validateFileForCurrentApp(file)) {
-      setStatus(
-        'Este archivo no es compatible con <code>' + escapeHtml(currentApp.appName) +
-        '</code>. Formatos admitidos: ' + currentApp.formatLabel + '.',
-        'error'
+      const item = {
+        id,
+        itemid: id,
+        nombre: file.name,
+        titulo: file.name,
+        visor: meta.visor,
+        categoria: meta.categoria,
+        coleccion: '',
+        collection: '',
+        source: 'local',
+        archivo: objectUrl,
+        resolvedurl: objectUrl,
+        resolvedUrl: objectUrl,
+        resolved_url: objectUrl,
+        localUrl: objectUrl,
+        blobUrl: objectUrl,
+        objectUrl: objectUrl,
+        localFileName: file.name,
+        fileName: file.name,
+        descripcion: '',
+        tamano: formatBytes(file.size),
+        thumbnail: null
+      };
+
+      return { item, meta };
+    }
+
+
+
+
+    function persistLocalPreview(payload) {
+      sessionStorage.setItem(STORAGE_ITEMS_KEY, JSON.stringify([payload.item]));
+      return payload.meta.viewer + '?id=' + encodeURIComponent(payload.item.id) + '&source=local';
+    }
+
+
+
+
+
+
+
+
+
+
+
+    function fillMeta(file, item, meta) {
+      metaName.textContent = file.name || '—';
+      metaSize.textContent = formatBytes(file.size);
+      metaExt.textContent = getExt(file.name) || '—';
+      metaDate.textContent = formatDate(file.lastModified);
+      metaViewer.textContent = meta.viewer;
+      metaCategory.textContent = item.categoria;
+      metaId.textContent = item.id;
+    }
+
+    function reserveViewerWindow() {
+      try {
+        const win = window.open(
+          'about:blank',
+          '_blank',
+          'popup=yes,width=1280,height=820,left=60,top=40,resizable=yes,scrollbars=yes'
+        );
+        if (win) {
+          try {
+            win.document.title = 'Preparando visor local...';
+            win.document.body.innerHTML =
+              '<div style="margin:0;min-height:100vh;display:grid;place-items:center;background:#050608;color:#e5e7eb;font-family:system-ui,sans-serif;">' +
+              '<div style="text-align:center;padding:24px;">Preparando visor local...</div></div>';
+          } catch (_) {}
+        }
+        return win;
+      } catch (_) {
+        return null;
+      }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function isWindowUsable(win) {
+      return !!(win && !win.closed);
+    }
+
+    function clearPendingOpenState() {
+      pendingViewerUrl = '';
+      pendingPayload = null;
+      btnOpenPending.hidden = true;
+    }
+
+    function navigateReservedWindow(viewerUrl, meta) {
+      if (isWindowUsable(reservedViewerWindow)) {
+        reservedViewerWindow.location.href = viewerUrl;
+        clearPendingOpenState();
+        setStatus(
+          'Archivo preparado correctamente. Se abrirá <code>' + escapeHtml(meta.viewer) +
+          '</code> en una ventana reservada con un item temporal de origen <code>local</code>.',
+          'ok'
+        );
+        reservedViewerWindow = null;
+        return true;
+      }
+      return false;
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+    function tryOpenViewerNow(viewerUrl, meta) {
+      const popup = window.open(
+        viewerUrl,
+        '_blank',
+        'popup=yes,width=1280,height=820,left=60,top=40,resizable=yes,scrollbars=yes'
       );
-      return;
+
+      if (popup) {
+        clearPendingOpenState();
+        setStatus(
+          'Archivo preparado correctamente. Se abrió <code>' + escapeHtml(meta.viewer) +
+          '</code> con un item temporal de origen <code>local</code>.',
+          'ok'
+        );
+        return true;
+      }
+
+      pendingViewerUrl = viewerUrl;
+      btnOpenPending.hidden = false;
+      setStatus(
+        'El archivo quedó preparado, pero el navegador bloqueó la apertura automática de <code>' +
+        escapeHtml(meta.viewer) +
+        '</code>. Usa el botón <code>Abrir visor pendiente</code> para continuar.',
+        'warn'
+      );
+      return false;
     }
 
-    try {
-      const { payload, viewerUrl } = prepareLocalPreview(file);
-      openViewerInSameWindow(viewerUrl, payload.meta);
-    } catch (err) {
-      console.error(err);
-      setStatus('No se pudo preparar el preview local. Revisa la consola del navegador para más detalle.', 'error');
-    }
-  }
 
-  applyAppConfig();
-  injectSuiteSwitcher();
 
-  btnPick.addEventListener('click', () => {
-    fileInput.value = '';
-    fileInput.click();
-  });
+    function prepareLocalPreview(file) {
+      const payload = buildLocalItem(file);
+      fillMeta(file, payload.item, payload.meta);
+      const viewerUrl = persistLocalPreview(payload);
+      pendingPayload = payload;
+      return { payload, viewerUrl };
 
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
 
-    if (!file) {
-      setStatus('Selección cancelada. No se eligió ningún archivo.', 'warn');
-      return;
+
+
+
+
+
+
     }
 
-    openLocalFile(file);
-  });
+    function openLocalFile(file, options = {}) {
+      if (!file) return;
+      if (!validateFileForCurrentApp(file)) {
+  setStatus(
+    'Este archivo no es compatible con <code>' + escapeHtml(currentApp.appName) +
+    '</code>. Formatos admitidos: ' + currentApp.formatLabel + '.',
+    'error'
+  );
+  return;
+}
+      const { useReservedWindow = false } = options;
 
-  ['dragenter', 'dragover'].forEach(evt => {
-    dropzone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropzone.classList.add('dragover');
+      try {
+        const { payload, viewerUrl } = prepareLocalPreview(file);
+
+
+
+        if (useReservedWindow && navigateReservedWindow(viewerUrl, payload.meta)) {
+          return;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        tryOpenViewerNow(viewerUrl, payload.meta);
+      } catch (err) {
+        console.error(err);
+        setStatus('No se pudo preparar el preview local. Revisa la consola del navegador para más detalle.', 'error');
+      }
+    }
+
+    applyAppConfig();
+
+
+
+
+    btnPick.addEventListener('click', () => {
+      reservedViewerWindow = reserveViewerWindow();
+
+
+
+
+
+
+
+
+      if (!reservedViewerWindow) {
+        setStatus(
+          'No se pudo reservar la ventana del viewer en este contexto. Aun así puedes elegir un archivo; si el popup se bloquea, aparecerá el botón <code>Abrir visor pendiente</code>.',
+          'warn'
+        );
+      } else {
+        setStatus(
+          'Ventana del viewer reservada correctamente. Ahora elige un archivo para completar la apertura.',
+          'ok'
+        );
+      }
+
+      fileInput.value = '';
+      fileInput.click();
     });
-  });
 
-  ['dragleave', 'dragend', 'drop'].forEach(evt => {
-    dropzone.addEventListener(evt, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropzone.classList.remove('dragover');
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+
+
+
+
+
+      if (!file) {
+        if (isWindowUsable(reservedViewerWindow)) {
+          reservedViewerWindow.close();
+        }
+        reservedViewerWindow = null;
+        setStatus('Selección cancelada. No se eligió ningún archivo.', 'warn');
+        return;
+      }
+
+      openLocalFile(file, { useReservedWindow: true });
     });
-  });
 
-  dropzone.addEventListener('drop', (e) => {
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) {
-      setStatus('No se detectó un archivo válido en el drop.', 'warn');
-      return;
-    }
 
-    openLocalFile(file);
-  });
-</script>
+
+
+
+
+
+    btnOpenPending.addEventListener('click', () => {
+      if (!pendingViewerUrl || !pendingPayload) {
+        btnOpenPending.hidden = true;
+        setStatus('No hay ningún visor pendiente por abrir.', 'warn');
+        return;
+      }
+
+
+
+      const ok = tryOpenViewerNow(pendingViewerUrl, pendingPayload.meta);
+      if (!ok) {
+        setStatus(
+          'El navegador sigue bloqueando la apertura automática. Intenta nuevamente desde este botón o revisa la política de popups del sitio.',
+          'warn'
+        );
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dragover');
+      });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    });
+
+
+    ['dragleave', 'dragend', 'drop'].forEach(evt => {
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dragover');
+      });
+    });
+
+
+    dropzone.addEventListener('drop', (e) => {
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) {
+        setStatus('No se detectó un archivo válido en el drop.', 'warn');
+        return;
+      }
+
+      openLocalFile(file, { useReservedWindow: false });
+    });
+  </script>
 </body>
 </html>
