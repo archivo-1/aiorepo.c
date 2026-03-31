@@ -260,6 +260,11 @@ async function loadItems() {
       ext = lowerArchivo.split('.').pop().split('?')[0].split('#')[0];
     }
 
+    console.log('[MEDIA] fileUrl:', fileUrl);
+    console.log('[MEDIA] archivo:', item.archivo);
+    console.log('[MEDIA] categoria:', item.categoria);
+    console.log('[MEDIA] ext:', ext);
+
     // Para la mayoría de los casos usaremos esta URL final
     const finalUrl = fileUrl || item.archivo;
 
