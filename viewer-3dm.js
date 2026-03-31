@@ -49,48 +49,83 @@
     }
 
         function getLocalItems() {
-        try {
-            const raw = sessionStorage.getItem('archvista-local-items');
-            if (!raw) return [];
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            console.warn('No se pudieron leer items locales:', e);
-            return [];
-        }
-    }
-
-    function isLocalSource() {
-        return getQueryParam('source') === 'local';
-    }
-
-       async function loadContent() {
-  const source = getQueryParam('source');
-
-  if (source === 'local') {
-    const raw = sessionStorage.getItem('archvista-local-items');
-    if (!raw) return [];
     try {
-      const items = JSON.parse(raw);
-      return Array.isArray(items) ? items : [];
-    } catch (err) {
-      console.error('No se pudo leer archvista-local-items desde sessionStorage', err);
-      return [];
+        const raw = sessionStorage.getItem('archvista-local-items');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        console.warn('No se pudieron leer items locales:', e);
+        return [];
     }
-  }
+}
 
-  const slugDirArc = getQueryParam('slugDirArc');
-  let url;
-  if (slugDirArc) {
-    url = 'https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=' + encodeURIComponent(slugDirArc);
-  } else {
-    url = 'content.json';
-  }
+function requestLocalItemFromOpener(id) {
+    return new Promise((resolve) => {
+        try {
+            if (!window.opener || window.opener.closed) {
+                resolve(null);
+                return;
+            }
 
-  const res = await fetch(url);
-  const data = await res.json();
-  const items = Array.isArray(data) ? data : data.items;
-  return items;
+            const timeout = setTimeout(() => {
+                window.removeEventListener('message', onMessage);
+                resolve(null);
+            }, 1200);
+
+            function onMessage(event) {
+                const data = event.data || {};
+                if (data?.type !== 'ARCHVISTA_RESPONSE_LOCAL_ITEM') return;
+                if (data?.id !== id) return;
+
+                clearTimeout(timeout);
+                window.removeEventListener('message', onMessage);
+                resolve(data.item || null);
+            }
+
+            window.addEventListener('message', onMessage);
+
+            window.opener.postMessage(
+                {
+                    type: 'ARCHVISTA_REQUEST_LOCAL_ITEM',
+                    id
+                },
+                '*'
+            );
+        } catch (err) {
+            console.warn('No se pudo pedir item local al opener:', err);
+            resolve(null);
+        }
+    });
+}
+
+function isLocalSource() {
+    return getQueryParam('source') === 'local';
+}
+
+async function loadContent() {
+    if (isLocalSource()) {
+        const id = getModelFromQuery();
+
+        const openerItem = id ? await requestLocalItemFromOpener(id) : null;
+        if (openerItem) {
+            return [openerItem];
+        }
+
+        return getLocalItems();
+    }
+
+    const slugDirArc = getQueryParam('slugDirArc');
+    let url;
+    if (slugDirArc) {
+        url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+    } else {
+        url = 'content.json';
+    }
+    const res = await fetch(url);
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.items || []);
+    return items;
 }
 
     function showLoading(msg) {
@@ -442,7 +477,7 @@
             return;
         }
 
-        const filePath = config.resolvedUrl || config.resolvedurl || config.resolved_url || config.objectUrl || config.localUrl || config.blobUrl || config.archivo;
+        const filePath = config.resolved_url || config.archivo;
         const displayName = config.nombre || filePath;
 
         showLoading('Cargando ' + displayName + '...');
