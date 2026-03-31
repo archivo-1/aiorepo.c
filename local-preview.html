@@ -280,6 +280,71 @@
 
   <script>
     const STORAGE_ITEMS_KEY = 'archvista-local-items';
+    const APP_CONFIGS = {
+  '3dm': {
+    appName: 'Aio 3DM',
+    heroTitle: 'Arrastra un archivo .3dm o selecciónalo para abrirlo en el visor Rhino.',
+    heroCopy: 'Esta versión solo admite modelos Rhino locales y los abre directamente en el visor 3DM.',
+    accept: '.3dm',
+    allowedExts: ['3dm'],
+    forcedViewer: 'viewer-3dm.html',
+    forcedVisor: '3dm',
+    forcedCategoria: 'modelo-3d',
+    formatLabel: '<code>.3dm</code>'
+  },
+  'ifc': {
+    appName: 'Aio IFC',
+    heroTitle: 'Arrastra un archivo .ifc o selecciónalo para abrirlo en el visor BIM.',
+    heroCopy: 'Esta versión solo admite modelos IFC locales y los abre directamente en el visor IFC.',
+    accept: '.ifc',
+    allowedExts: ['ifc'],
+    forcedViewer: 'viewer-ifc.html',
+    forcedVisor: 'ifc',
+    forcedCategoria: 'modelo-BIM',
+    formatLabel: '<code>.ifc</code>'
+  },
+  'dxf': {
+    appName: 'Aio DXF',
+    heroTitle: 'Arrastra un archivo .dxf o selecciónalo para abrirlo en el visor CAD.',
+    heroCopy: 'Esta versión solo admite archivos DXF locales y los abre directamente en el visor DXF.',
+    accept: '.dxf',
+    allowedExts: ['dxf'],
+    forcedViewer: 'viewer-dxf.html',
+    forcedVisor: 'dxf',
+    forcedCategoria: 'plano-2d',
+    formatLabel: '<code>.dxf</code>'
+  },
+  'map': {
+    appName: 'Aio Mapas',
+    heroTitle: 'Arrastra un archivo .geojson o selecciónalo para abrirlo en el visor geográfico.',
+    heroCopy: 'Esta versión solo admite archivos geográficos locales y los abre directamente en el visor de mapas.',
+    accept: '.geojson,.json',
+    allowedExts: ['geojson', 'json'],
+    forcedViewer: 'viewer-map.html',
+    forcedVisor: 'map',
+    forcedCategoria: 'mapa',
+    formatLabel: '<code>.geojson</code>, <code>.json</code>'
+  },
+  'media': {
+    appName: 'Aio Media',
+    heroTitle: 'Arrastra un archivo compatible o selecciónalo para abrirlo en el visor de medios.',
+    heroCopy: 'Esta versión admite documentos y medios locales compatibles con Aio Media.',
+    accept: '.webm,.mp4,.mp3,.pdf,.txt,.md',
+    allowedExts: ['webm', 'mp4', 'mp3', 'pdf', 'txt', 'md'],
+    forcedViewer: 'viewer-media.html',
+    forcedVisor: 'media',
+    forcedCategoria: 'media',
+    formatLabel: '<code>.webm</code>, <code>.mp4</code>, <code>.mp3</code>, <code>.pdf</code>, <code>.txt</code>, <code>.md</code>'
+  }
+};
+
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
+const currentAppKey = (getQueryParam('app') || '3dm').toLowerCase();
+const currentApp = APP_CONFIGS[currentAppKey] || APP_CONFIGS['3dm'];
 
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
@@ -294,6 +359,12 @@
     const metaViewer = document.getElementById('meta-viewer');
     const metaCategory = document.getElementById('meta-category');
     const metaId = document.getElementById('meta-id');
+
+    const heroEyebrow = document.querySelector('.eyebrow');
+    const heroTitle = document.querySelector('.hero-top h2');
+    const heroCopy = document.querySelector('.hero-top p');
+    const dropTitle = document.querySelector('.drop-title');
+    const dropCopy = document.querySelector('.drop-copy');
 
     let reservedViewerWindow = null;
     let pendingViewerUrl = '';
@@ -330,6 +401,22 @@ window.addEventListener('message', (event) => {
     console.warn('No se pudo responder al viewer local:', err);
   }
 });
+
+function applyAppConfig() {
+  document.title = currentApp.appName + ' · Aio Repo C';
+
+  if (heroEyebrow) heroEyebrow.textContent = 'Abrir archivo local';
+  if (heroTitle) heroTitle.textContent = currentApp.heroTitle;
+  if (heroCopy) heroCopy.textContent = currentApp.heroCopy;
+  if (dropTitle) dropTitle.textContent = 'Suelta aquí tu archivo';
+  if (dropCopy) {
+    dropCopy.innerHTML = 'Formatos admitidos: ' + currentApp.formatLabel + '.';
+  }
+
+  if (fileInput) {
+    fileInput.setAttribute('accept', currentApp.accept);
+  }
+}
 
     function escapeHtml(value) {
       return String(value ?? '')
@@ -381,20 +468,17 @@ window.addEventListener('message', (event) => {
     }
 
     function inferMetaFromFileName(filename) {
-      const ext = getExt(filename);
-      if (ext === 'pdf') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'pdf' };
-      if (ext === 'txt') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'txt' };
-      if (ext === 'md') return { visor: 'media', viewer: 'viewer-media.html', categoria: 'md' };
-      if (ext === 'ifc') return { visor: 'ifc', viewer: 'viewer-ifc.html', categoria: 'modelo-BIM' };
-      if (ext === '3dm') return { visor: '3dm', viewer: 'viewer-3dm.html', categoria: 'modelo-3d' };
-      if (ext === 'dxf') return { visor: 'dxf', viewer: 'viewer-dxf.html', categoria: 'plano-2d' };
-      if (ext === 'glb' || ext === 'gltf') return { visor: 'glb', viewer: 'viewer-glb.html', categoria: 'modelo-3d' };
-      if (['jpg','jpeg','png','webp','gif','svg','bmp','avif'].includes(ext)) return { visor: 'media', viewer: 'viewer-media.html', categoria: 'imagen' };
-      if (['mp4','webm','mov','m4v'].includes(ext)) return { visor: 'media', viewer: 'viewer-media.html', categoria: 'video' };
-      if (['mp3','wav','ogg','m4a','aac','flac'].includes(ext)) return { visor: 'media', viewer: 'viewer-media.html', categoria: 'audio' };
-      if (ext === 'geojson' || ext === 'json') return { visor: 'map', viewer: 'viewer-map.html', categoria: 'mapa' };
-      return { visor: 'media', viewer: 'viewer-media.html', categoria: 'otro' };
-    }
+  return {
+    visor: currentApp.forcedVisor,
+    viewer: currentApp.forcedViewer,
+    categoria: currentApp.forcedCategoria
+  };
+}
+
+function validateFileForCurrentApp(file) {
+  const ext = getExt(file?.name || '');
+  return currentApp.allowedExts.includes(ext);
+}
 
     function buildLocalItem(file) {
       const meta = inferMetaFromFileName(file.name);
@@ -528,6 +612,14 @@ window.addEventListener('message', (event) => {
 
     function openLocalFile(file, options = {}) {
       if (!file) return;
+      if (!validateFileForCurrentApp(file)) {
+  setStatus(
+    'Este archivo no es compatible con <code>' + escapeHtml(currentApp.appName) +
+    '</code>. Formatos admitidos: ' + currentApp.formatLabel + '.',
+    'error'
+  );
+  return;
+}
       const { useReservedWindow = false } = options;
 
       try {
@@ -543,6 +635,8 @@ window.addEventListener('message', (event) => {
         setStatus('No se pudo preparar el preview local. Revisa la consola del navegador para más detalle.', 'error');
       }
     }
+
+    applyAppConfig();
 
     btnPick.addEventListener('click', () => {
       reservedViewerWindow = reserveViewerWindow();
