@@ -148,7 +148,11 @@ function getIdFromQuery() {
   return getQueryParam('id');
 }
 
-async function loadContent() {
+function isLocalSource() {
+  return getQueryParam('source') === 'local';
+}
+
+async function loadRemoteContent() {
   const slugDirArc = getQueryParam('slugDirArc');
   let url;
   if (slugDirArc) {
@@ -160,14 +164,56 @@ async function loadContent() {
   }
   const res = await fetch(url, { cache: 'no-cache' });
   const data = await res.json();
-  const items = Array.isArray(data) ? data : data.items || [];
-  return items;
+  return Array.isArray(data) ? data : data.items || [];
+}
+
+function loadLocalItems() {
+  try {
+    const raw = sessionStorage.getItem('archvista-local-items');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.warn('No se pudo leer archvista-local-items:', e);
+    return [];
+  }
 }
 
 function buildModelUrl(archivo, resolvedUrl) {
   const url = resolvedUrl || archivo || '';
   if (/^https?:\/\//i.test(url)) return url;
+  if (/^blob:/i.test(url)) return url;
   return url;
+}
+
+function getRemoteIfcUrl(item) {
+  const archivo = item.archivo || '';
+  const resolvedUrl = item.resolved_url || item.resolvedUrl || '';
+  return buildModelUrl(archivo, resolvedUrl);
+}
+
+function getLocalIfcUrl(item) {
+  const archivo = item.archivo || '';
+  const resolvedUrl =
+    item.localUrl ||
+    item.blobUrl ||
+    item.objectUrl ||
+    item.resolved_url ||
+    item.resolvedUrl ||
+    '';
+  return buildModelUrl(archivo, resolvedUrl);
+}
+
+function getLocalFileName(item) {
+  return (
+    item.localFileName ||
+    item.fileName ||
+    item.filename ||
+    item.originalName ||
+    item.archivo_nombre ||
+    item.archivoName ||
+    item.nombre ||
+    ''
+  );
 }
 
 // ---------------------------------------------------------------------
@@ -623,7 +669,7 @@ function setupCollectionSideNav(allData, currentItem) {
 }
 
 // ---------------------------------------------------------------------
-// Panel capas IFC (placeholder)
+// Panel capas IFC
 // ---------------------------------------------------------------------
 function buildIfcLayersPanel() {
   const list = document.getElementById('layers-list');
@@ -644,18 +690,123 @@ async function initIfcFromContent() {
   try {
     const id = getIdFromQuery();
     if (!id) {
-      if (helpText)
-        helpText.textContent = 'No hay id en la URL (?id=...)';
+      if (helpText) helpText.textContent = 'No hay id en la URL (?id=...)';
       return;
     }
 
-    const items = await loadContent();
+    if (isLocalSource()) {
+      const items = loadLocalItems();
+      const item = items.find((it) => String(it.id) === String(id));
+
+      if (!item) {
+        if (helpText) {
+          helpText.textContent =
+            'No se encontró el archivo local. Vuelve a abrirlo desde Local Preview.';
+        }
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        return;
+      }
+
+      const titleEl = document.getElementById('model-title');
+      if (titleEl) {
+        titleEl.textContent = item.nombre || item.titulo || item.id;
+      }
+
+      const ifcUrl = getLocalIfcUrl(item);
+      const localFileName = String(getLocalFileName(item)).toLowerCase();
+
+      if (!ifcUrl) {
+        if (helpText) {
+          helpText.textContent = 'Este elemento local no tiene archivo IFC.';
+        }
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        return;
+      }
+
+      if (localFileName && !localFileName.endsWith('.ifc')) {
+        if (helpText) {
+          helpText.textContent =
+            'El archivo indicado no es .ifc (extensión: ' +
+            localFileName.split('.').pop() +
+            ')';
+        }
+        if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        return;
+      }
+
+      if (helpText) helpText.textContent = 'Cargando modelo IFC...';
+
+      ifcLoader.load(
+        ifcUrl,
+        async (model) => {
+          ifcModel = model;
+          modelGroup.add(ifcModel);
+
+          ifcModel.traverse((obj) => {
+            if (!obj.isMesh) return;
+            const originalMat = obj.material;
+            const hex =
+              originalMat && originalMat.color && originalMat.color.getHex
+                ? originalMat.color.getHex()
+                : 0xcccccc;
+            const set = buildMatSet(hex, '');
+            set.rendered = originalMat;
+            meshMatCache[obj.uuid] = set;
+          });
+
+          const box = new THREE.Box3().setFromObject(ifcModel);
+          box.getSize(modelSize);
+          box.getCenter(modelCenter);
+          modelSpan = Math.max(modelSize.x, modelSize.y, modelSize.z) || 10;
+
+          setupClippingPlanes(box);
+
+          const cutBottom = document.getElementById('cut-bottom');
+          const cutTop = document.getElementById('cut-top');
+          const cutLeft = document.getElementById('cut-left');
+          const cutRight = document.getElementById('cut-right');
+          const cutFront = document.getElementById('cut-front');
+          const cutBack = document.getElementById('cut-back');
+          const cutEnabled = document.getElementById('cut-enabled');
+
+          if (cutBottom) updateCutBottom(parseFloat(cutBottom.value || '0'));
+          if (cutTop) updateCutTop(parseFloat(cutTop.value || '0'));
+          if (cutLeft) updateCutLeft(parseFloat(cutLeft.value || '0'));
+          if (cutRight) updateCutRight(parseFloat(cutRight.value || '0'));
+          if (cutFront) updateCutFront(parseFloat(cutFront.value || '0'));
+          if (cutBack) updateCutBack(parseFloat(cutBack.value || '0'));
+          updateClippingEnabled(cutEnabled ? cutEnabled.checked : true);
+
+          resetCamera();
+          updateSunFromUI();
+          buildIfcLayersPanel();
+
+          if (helpOverlay) helpOverlay.classList.add('hidden');
+          if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        },
+        undefined,
+        (err) => {
+          console.error('Error cargando IFC', err);
+          if (helpText)
+            helpText.textContent = 'Error cargando IFC. Revisa la consola.';
+          if (loadingOverlay) loadingOverlay.classList.add('hidden');
+        }
+      );
+
+      return;
+    }
+
+    // ---------------------------
+    // MODO REMOTO: EXACTAMENTE COMO EL ORIGINAL
+    // ---------------------------
+    const items = await loadRemoteContent();
     const item = items.find((it) => it.id === id);
 
     if (!item) {
       if (helpText)
         helpText.textContent =
           'Elemento no encontrado en contenido (id: ' + id + ')';
+      if (loadingOverlay) loadingOverlay.classList.add('hidden');
       return;
     }
 
@@ -666,9 +817,7 @@ async function initIfcFromContent() {
 
     setupCollectionSideNav(items, item);
 
-    const archivo = item.archivo || '';
-    const resolvedUrl = item.resolved_url || item.resolvedUrl || '';
-    const ifcUrl = buildModelUrl(archivo, resolvedUrl);
+    const ifcUrl = getRemoteIfcUrl(item);
 
     if (!ifcUrl) {
       if (helpText)
@@ -795,23 +944,33 @@ function initUI() {
   if (resetBtn) resetBtn.addEventListener('click', resetCamera);
 
   const backBtn = document.getElementById('back-btn');
-  if (backBtn) {
-    backBtn.addEventListener('click', (e) => {
+if (backBtn) {
+  if (isLocalSource()) {
+    backBtn.textContent = '✕ Cerrar';
+    backBtn.title = 'Cerrar vista previa';
+    backBtn.onclick = (e) => {
       e.preventDefault();
+      window.close();
+    };
+  } else {
+    backBtn.textContent = '← Volver';
+    backBtn.title = 'Volver';
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+
       const slugDirArc = getQueryParam('slugDirArc');
 
       if (slugDirArc) {
         const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
         window.location.href = target;
+      } else if (window.history.length > 1) {
+        window.history.back();
       } else {
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          window.location.href = 'index.html';
-        }
+        window.location.href = 'index.html';
       }
-    });
+    };
   }
+}
 
   const bgSelect = document.getElementById('bg-select');
   if (bgSelect) {
