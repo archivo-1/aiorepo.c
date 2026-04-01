@@ -630,34 +630,104 @@ async function loadContent() {
 }
 
     function processDocObjects(doc, rhino, shadowEnabled) {
-        const group = new THREE.Group();
-        const objs = doc.objects();
-        layerMeshes = {};
-        function recurse(obj, parent) {
-            const geom = obj.geometry(); if (!geom) return;
-            if (rhino.ObjectType && geom.objectType === rhino.ObjectType.InstanceReference) {
-                const idef = doc.instanceDefinitions().findId(geom.parentIdefId);
-                if (idef) {
+    const group = new THREE.Group();
+    const objs = doc.objects();
+    layerMeshes = {};
+
+    function safeDelete(obj) {
+        if (obj && typeof obj.delete === 'function') {
+            try { obj.delete(); } catch (e) {}
+        }
+    }
+
+    function recurse(obj, parent, depth = 0) {
+        if (!obj) return;
+
+        let geom = null;
+
+        try {
+            geom = obj.geometry();
+            if (!geom) return;
+
+            const objectType = geom.objectType;
+            console.log(`Aio Visor: Procesando objeto type=${objectType} depth=${depth}`);
+
+            if (rhino.ObjectType && objectType === rhino.ObjectType.InstanceReference) {
+                try {
+                    const idefId = geom.parentIdefId;
+                    const idef = doc.instanceDefinitions().findId(idefId);
+
+                    if (!idef) {
+                        console.warn('Aio Visor: InstanceReference sin definición válida.', idefId);
+                        return;
+                    }
+
                     const bg = new THREE.Group();
-                    idef.getObjectIds().forEach(id => { const c = doc.objects().findId(id); if (c) recurse(c, bg); });
+                    const objectIds = idef.getObjectIds();
+
+                    if (Array.isArray(objectIds)) {
+                        objectIds.forEach(id => {
+                            try {
+                                const childObj = doc.objects().findId(id);
+                                if (childObj) recurse(childObj, bg, depth + 1);
+                            } catch (e) {
+                                console.warn('Aio Visor: Error procesando objeto dentro de bloque.', e);
+                            }
+                        });
+                    } else if (typeof objectIds?.count === 'number' && typeof objectIds?.get === 'function') {
+                        for (let i = 0; i < objectIds.count; i++) {
+                            try {
+                                const id = objectIds.get(i);
+                                const childObj = doc.objects().findId(id);
+                                if (childObj) recurse(childObj, bg, depth + 1);
+                            } catch (e) {
+                                console.warn('Aio Visor: Error procesando objeto dentro de bloque.', e);
+                            }
+                        }
+                    }
+
                     bg.applyMatrix4(rhinoXformToMatrix4(geom.xform));
                     parent.add(bg);
+                    return;
+                } catch (e) {
+                    console.warn('Aio Visor: Error procesando InstanceReference.', e);
+                    return;
                 }
-            } else {
+            }
+
+            try {
                 const app = getObjAppearance(obj, doc);
                 const tojs = rhinoGeomToThreeObjs(geom, rhino, app);
+
                 tojs.forEach(o => {
                     if (o.isMesh) o.castShadow = o.receiveShadow = shadowEnabled;
                     parent.add(o);
+
                     const ln = app.layerName || 'Default';
                     if (!layerMeshes[ln]) layerMeshes[ln] = [];
                     layerMeshes[ln].push(o);
                 });
+            } catch (e) {
+                console.warn(`Aio Visor: Error convirtiendo objeto type=${objectType}`, e);
             }
+
+        } catch (e) {
+            console.warn('Aio Visor: Error general procesando objeto del documento.', e);
+        } finally {
+            safeDelete(geom);
         }
-        for (let i = 0; i < objs.count; i++) recurse(objs.get(i), group);
-        return group;
     }
+
+    for (let i = 0; i < objs.count; i++) {
+        try {
+            recurse(objs.get(i), group, 0);
+        } catch (e) {
+            console.warn(`Aio Visor: Error en objeto raíz índice ${i}`, e);
+        }
+    }
+
+    return group;
+}
 
     async function loadModel() {
         const config = await loadModelConfig();
