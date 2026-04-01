@@ -404,85 +404,224 @@ async function loadContent() {
         return (r << 16) | (g << 8) | b;
     }
 
+    function rhinoXformToMatrix4(xform) {
+    const identity = new THREE.Matrix4();
+
+    try {
+        if (!xform) return identity;
+
+        let arr = null;
+
+        if (typeof xform.toFloatArray === 'function') {
+            try {
+                arr = xform.toFloatArray(true);
+            } catch (e) {
+                try {
+                    arr = xform.toFloatArray(false);
+                } catch (e2) {}
+            }
+        }
+
+        if ((!arr || arr.length !== 16) && typeof xform.toArray === 'function') {
+            try {
+                arr = xform.toArray();
+            } catch (e) {}
+        }
+
+        if ((!arr || arr.length !== 16) && Array.isArray(xform) && xform.length === 16) {
+            arr = xform;
+        }
+
+        if ((!arr || arr.length !== 16) && typeof xform === 'object') {
+            const values = [];
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const v = xform[r]?.[c];
+                    values.push(typeof v === 'number' ? v : 0);
+                }
+            }
+            if (values.length === 16) arr = values;
+        }
+
+        if (!arr || arr.length !== 16) {
+            console.warn('Aio Visor: Transform no reconocida, usando identidad.', xform);
+            return identity;
+        }
+
+        return new THREE.Matrix4().fromArray(arr);
+    } catch (e) {
+        console.warn('Aio Visor: Error convirtiendo transform, usando identidad.', e);
+        return identity;
+    }
+}
+
     function rhinoGeomToThreeObjs(geom, rhino, appearance) {
     const results = [];
     const hex = appearance.hexColor;
     const lname = appearance.layerName;
-    
-    // Función auxiliar para no repetir código al crear mallas
-    const processMesh = (rhinoMesh) => {
+
+    const processMesh = (rhinoMesh, debugLabel = '') => {
+        if (!rhinoMesh) return false;
+
         try {
             const jsonStr = rhinoMesh.toThreejsJSON();
             const jsonObj = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+
+            if (!jsonObj) {
+                console.warn(`Aio Visor: Malla vacía (${debugLabel})`);
+                return false;
+            }
+
             const geo = new THREE.BufferGeometryLoader().parse(jsonObj);
+
+            if (!geo || !geo.attributes || !geo.attributes.position || geo.attributes.position.count === 0) {
+                console.warn(`Aio Visor: BufferGeometry inválida o vacía (${debugLabel})`);
+                return false;
+            }
+
+            geo.computeVertexNormals();
+
             const matSet = buildMatSet(hex, lname);
             const mesh = new THREE.Mesh(geo, matSet[visualStyle] || matSet.rendered);
-            
+
             meshMatCache[mesh.uuid] = matSet;
             results.push(mesh);
+            return true;
         } catch (e) {
-            console.warn("Aio Visor: No se pudo parsear la malla", e);
+            console.warn(`Aio Visor: No se pudo parsear la malla (${debugLabel})`, e);
+            return false;
         }
     };
 
-    // Evaluamos explícitamente qué tipo de objeto estamos leyendo
+    const processMeshCandidate = (candidate, debugLabel = '') => {
+        let success = false;
+
+        if (!candidate) return false;
+
+        if (Array.isArray(candidate)) {
+            candidate.forEach((m, i) => {
+                if (processMesh(m, `${debugLabel}[${i}]`)) success = true;
+            });
+            return success;
+        }
+
+        if (typeof candidate.count === 'number' && typeof candidate.get === 'function') {
+            for (let i = 0; i < candidate.count; i++) {
+                const m = candidate.get(i);
+                if (processMesh(m, `${debugLabel}[${i}]`)) success = true;
+            }
+            return success;
+        }
+
+        return processMesh(candidate, debugLabel);
+    };
+
     switch (geom.objectType) {
-        
+
         case rhino.ObjectType.Mesh:
-            // Si ya es una malla, la procesamos directo
-            processMesh(geom);
+            processMeshCandidate(geom, 'Mesh');
             break;
 
         case rhino.ObjectType.Brep:
         case rhino.ObjectType.Extrusion:
         case rhino.ObjectType.SubD:
-            // Si es geometría compleja, intentamos extraer su malla de renderizado guardada
             try {
-                const types = [rhino.MeshType.Any, rhino.MeshType.Render, rhino.MeshType.Default];
+                const meshTypes = [
+                    rhino.MeshType.Any,
+                    rhino.MeshType.Render,
+                    rhino.MeshType.Preview,
+                    rhino.MeshType.Default
+                ];
+
                 let foundMesh = false;
-                
-                for (let t of types) {
-                    const rm = geom.getMesh(t);
-                    if (rm) {
-                        processMesh(rm);
-                        rm.delete(); // Es crucial borrar esto para liberar memoria de WebAssembly
-                        foundMesh = true;
-                        break;
+
+                for (let t of meshTypes) {
+                    let rm = null;
+
+                    try {
+                        rm = geom.getMesh(t);
+                    } catch (e) {
+                        console.warn(`Aio Visor: getMesh falló para tipo ${geom.objectType} / MeshType ${t}`, e);
+                        continue;
                     }
+
+                    const ok = processMeshCandidate(rm, `${geom.objectType}-MeshType-${t}`);
+
+                    if (ok) {
+                        foundMesh = true;
+                    }
+
+                    if (rm && typeof rm.delete === 'function') {
+                        try { rm.delete(); } catch (e) {}
+                    }
+
+                    if (foundMesh) break;
                 }
-                
+
                 if (!foundMesh) {
-                    console.log(`Aio Visor: Objeto ${geom.objectType} sin malla de renderizado. Ignorado.`);
+                    console.warn(`Aio Visor: ${geom.objectType} sin render mesh utilizable. Puede ser un límite de rhino3dm o un archivo guardado sin render meshes.`);
                 }
             } catch (e) {
-                console.warn("Aio Visor: Error extrayendo malla", e);
+                console.warn(`Aio Visor: Error extrayendo malla desde objeto ${geom.objectType}`, e);
             }
             break;
 
         case rhino.ObjectType.Curve:
-            // Aquí protegemos las curvas. Solo entran objetos 1D, evitando el error de las superficies.
             try {
-                if (geom.domain && typeof geom.pointAt === 'function') {
-                    const pts = [];
-                    const d = geom.domain;
-                    // Interpolamos 100 puntos a lo largo de la curva para dibujarla suavemente
-                    for (let i = 0; i <= 100; i++) {
-                        const t = d[0] + (d[1] - d[0]) * (i / 100);
-                        const p = geom.pointAt(t);
-                        if (p) pts.push(new THREE.Vector3(p[0], p[1], p[2]));
+                if (typeof geom.pointAt === 'function') {
+                    let d0 = 0, d1 = 1;
+
+                    if (geom.domain) {
+                        if (Array.isArray(geom.domain)) {
+                            d0 = geom.domain[0];
+                            d1 = geom.domain[1];
+                        } else if (typeof geom.domain === 'function') {
+                            const d = geom.domain();
+                            if (Array.isArray(d)) {
+                                d0 = d[0];
+                                d1 = d[1];
+                            } else if (d && d[0] !== undefined && d[1] !== undefined) {
+                                d0 = d[0];
+                                d1 = d[1];
+                            } else if (d && d.t0 !== undefined && d.t1 !== undefined) {
+                                d0 = d.t0;
+                                d1 = d.t1;
+                            }
+                        } else if (geom.domain.t0 !== undefined && geom.domain.t1 !== undefined) {
+                            d0 = geom.domain.t0;
+                            d1 = geom.domain.t1;
+                        }
                     }
-                    const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
-                    const lineMat = new THREE.LineBasicMaterial({ color: hex });
-                    results.push(new THREE.Line(lineGeo, lineMat));
+
+                    const pts = [];
+                    for (let i = 0; i <= 100; i++) {
+                        const t = d0 + (d1 - d0) * (i / 100);
+                        const p = geom.pointAt(t);
+                        if (!p) continue;
+
+                        const x = p.x !== undefined ? p.x : p[0];
+                        const y = p.y !== undefined ? p.y : p[1];
+                        const z = p.z !== undefined ? p.z : p[2];
+
+                        if ([x, y, z].every(v => typeof v === 'number' && isFinite(v))) {
+                            pts.push(new THREE.Vector3(x, y, z));
+                        }
+                    }
+
+                    if (pts.length >= 2) {
+                        const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+                        const lineMat = new THREE.LineBasicMaterial({ color: hex });
+                        results.push(new THREE.Line(lineGeo, lineMat));
+                    } else {
+                        console.warn('Aio Visor: Curva sin puntos suficientes para dibujarse.');
+                    }
                 }
             } catch (e) {
-                console.warn("Aio Visor: Error dibujando curva", e);
+                console.warn('Aio Visor: Error dibujando curva', e);
             }
             break;
 
         default:
-            // Textos, Cotas (Annotations), Hatches o Puntos caerán aquí silenciosamente
-            // en lugar de romper el visor.
             console.log(`Aio Visor: Tipo de geometría no soportada por ahora (${geom.objectType})`);
             break;
     }
@@ -501,7 +640,7 @@ async function loadContent() {
                 if (idef) {
                     const bg = new THREE.Group();
                     idef.getObjectIds().forEach(id => { const c = doc.objects().findId(id); if (c) recurse(c, bg); });
-                    bg.applyMatrix4(new THREE.Matrix4().fromArray(geom.xform.toArray()));
+                    bg.applyMatrix4(rhinoXformToMatrix4(geom.xform));
                     parent.add(bg);
                 }
             } else {
@@ -664,7 +803,7 @@ async function loadContent() {
         document.querySelectorAll('.cam-btn[data-mode]').forEach(btn => btn.addEventListener('click', () => setCameraMode(btn.dataset.mode)));
         document.querySelectorAll('.style-btn').forEach(btn => btn.addEventListener('click', () => applyStyle(btn.dataset.style)));
 
-        changeBackground('black');
+        changeBackground('grey');
         loadModel();
 
         (function anim() {
