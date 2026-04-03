@@ -56,28 +56,84 @@
             background: rgba(255,255,255,0.02);
         }
         .btn-header:hover { color: #fff; background: rgba(255,255,255,0.05); border-color: #00f2ff; }
+        
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
         @media (max-width: 480px) {
-            .btn-back-text, .btn-osm-text { display: none; }
+            .btn-back-text, .btn-osm-text, .btn-raw-text { display: none; }
             .btn-osm-short { display: inline !important; }
             header { padding: 0 0.5rem; }
         }
-        /* FIXED CODE */
-@media (min-width: 481px) { 
-    .btn-osm-short { display: none; } 
-} /* <--- This closing brace was missing */
+        
+        @media (min-width: 481px) { 
+            .btn-osm-short { display: none; } 
+        }
 
-#map {
-    flex: 1;
-    width: 100%;
-    background: #050608;
-    position: relative;
-}
+        #map {
+            flex: 1;
+            width: 100%;
+            background: #050608;
+            position: relative;
+        }
 
         .leaflet-control-rotate, .leaflet-control-compass { display: none !important; }
 
+        /* Raw Data Panel */
+        #raw-panel {
+            position: absolute;
+            top: 52px; /* Matches header height */
+            bottom: 0;
+            left: -100%;
+            width: 400px;
+            max-width: 90%;
+            background: rgba(13, 17, 23, 0.98);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(0, 242, 255, 0.3);
+            z-index: 1800;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+        }
+        #raw-panel.open { left: 0; }
+        
+        #raw-panel-header {
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #00f2ff;
+        }
+        .raw-close {
+            background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer;
+        }
+        .raw-close:hover { color: #fff; }
+
+        #raw-textarea {
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            color: #e5e7eb;
+            border: none;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            resize: none;
+            outline: none;
+            white-space: pre;
+            overflow: auto;
+            line-height: 1.4;
+        }
+        #raw-textarea::selection { background: rgba(0, 242, 255, 0.3); }
+
+        /* Info Capsule */
         #info-capsule {
             position: absolute;
-            bottom: -150px;
+            bottom: -300px;
             left: 50%;
             transform: translateX(-50%);
             width: 92%;
@@ -108,13 +164,21 @@
             cursor: pointer; line-height: 0.8; padding: 0 0 5px 10px;
         }
         .capsule-close:hover { color: #fff; }
-        .capsule-desc { font-size: 0.8rem; color: #9ca3af; line-height: 1.5; max-height: 100px; overflow-y: auto; }
+        .capsule-desc { 
+            font-size: 0.8rem; color: #9ca3af; line-height: 1.5; 
+            max-height: 200px; overflow-y: auto; 
+        }
+        .capsule-desc img {
+            max-width: 100%; border-radius: 6px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .capsule-desc a { color: #00f2ff; }
         .capsule-meta {
             font-size: 0.7rem; color: #00f2ff; background: rgba(0, 242, 255, 0.1);
             padding: 3px 8px; border-radius: 4px; align-self: flex-start;
             margin-top: 5px; border: 1px solid rgba(0, 242, 255, 0.2);
         }
 
+        /* Collection Nav */
         .collection-nav-container {
             position: absolute;
             top: 50%;
@@ -155,6 +219,7 @@
         .coll-item:hover { background: rgba(0, 242, 255, 0.1); color: #fff; }
         .coll-item.active { color: #00f2ff; background: rgba(0, 242, 255, 0.05); border-right: 3px solid #00f2ff; }
 
+        /* Compass */
         .compass-container {
             position: absolute; top: 20px; right: 20px; z-index: 1000;
             background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(255,255,255,0.2);
@@ -178,13 +243,26 @@
 <body>
 <header>
     <a href="#" id="back-btn" class="btn-header">
-    <span>←</span><span class="btn-back-text">&nbsp;Volver</span>
-</a>
-    <div id="map-title">Cargando...</div>
-    <a id="btn-osm" href="#" target="_blank" class="btn-header" style="display: none;">
-        <span>⇗</span>&nbsp;<span class="btn-osm-text">OpenStreetMap</span><span class="btn-osm-short" style="display:none">OSM</span>
+        <span>←</span><span class="btn-back-text">&nbsp;Volver</span>
     </a>
+    <div id="map-title">Cargando...</div>
+    <div class="header-actions">
+        <a id="btn-raw" href="#" class="btn-header">
+            <span>{ }</span>&nbsp;<span class="btn-raw-text">Raw</span>
+        </a>
+        <a id="btn-osm" href="#" target="_blank" class="btn-header" style="display: none;">
+            <span>⇗</span>&nbsp;<span class="btn-osm-text">OpenStreetMap</span><span class="btn-osm-short" style="display:none">OSM</span>
+        </a>
+    </div>
 </header>
+
+<div id="raw-panel">
+    <div id="raw-panel-header">
+        <span>GeoJSON Original</span>
+        <button class="raw-close" id="close-raw">×</button>
+    </div>
+    <textarea id="raw-textarea" readonly spellcheck="false" placeholder="Cargando datos..."></textarea>
+</div>
 
 <div class="collection-nav-container" id="collection-nav" style="display: none;">
     <div class="coll-side-tab" id="collTab">Colección</div>
@@ -214,45 +292,84 @@
 <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
 
 <script>
+    // System core - untouched
     function getQueryParam(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
-}
-
-function getLocalItems() {
-    try {
-        const raw = sessionStorage.getItem('archvista-local-items');
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-        console.warn('No se pudieron leer items locales:', e);
-        return [];
-    }
-}
-
-function isLocalSource() {
-    return getQueryParam('source') === 'local';
-}
-
-async function loadContent() {
-    if (isLocalSource()) {
-        return getLocalItems();
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
     }
 
-    const slugDirArc = getQueryParam('slugDirArc');
-    let url;
-    if (slugDirArc) {
-        url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
-    } else {
-        url = 'content.json';
+    function getLocalItems() {
+        try {
+            const raw = sessionStorage.getItem('archvista-local-items');
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.warn('No se pudieron leer items locales:', e);
+            return [];
+        }
     }
-    const res = await fetch(url);
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data.items || []);
-}
+
+    function isLocalSource() {
+        return getQueryParam('source') === 'local';
+    }
+
+    async function loadContent() {
+        if (isLocalSource()) {
+            return getLocalItems();
+        }
+
+        const slugDirArc = getQueryParam('slugDirArc');
+        let url;
+        if (slugDirArc) {
+            url = `https://zihojlqhxfxdjahgrbwy.functions.supabase.co/dirarc-json?slug=${encodeURIComponent(slugDirArc)}`;
+        } else {
+            url = 'content.json';
+        }
+        const res = await fetch(url);
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.items || []);
+    }
 
     const itemId = getQueryParam('id');
+
+    // UI Event Listeners for Raw Panel
+    document.getElementById('btn-raw').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('raw-panel').classList.toggle('open');
+    });
+
+    document.getElementById('close-raw').addEventListener('click', () => {
+        document.getElementById('raw-panel').classList.remove('open');
+    });
+
+    // Helper to highlight a clicked feature in the Raw JSON Textarea
+    function highlightFeatureInTextarea(feature) {
+        const panel = document.getElementById('raw-panel');
+        if (!panel.classList.contains('open')) return; // Optional: Only execute if open for performance
+
+        const textarea = document.getElementById('raw-textarea');
+        const text = textarea.value;
+
+        // Try to find a unique string subset from the geometry coordinates to locate the feature block
+        let searchString = "";
+        if (feature.geometry && feature.geometry.coordinates) {
+            const coordsStr = JSON.stringify(feature.geometry.coordinates);
+            searchString = coordsStr.replace(/[\[\]]/g, '').split(',').slice(0, 3).join(',');
+        }
+
+        if (searchString && searchString.length > 5) {
+            const index = text.indexOf(searchString);
+            if (index !== -1) {
+                textarea.focus();
+                textarea.setSelectionRange(index - 20, index + 100); // Visual cue mapping block
+                
+                const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight) || 16;
+                const linesBefore = text.substring(0, index).split('\n').length;
+                textarea.scrollTop = (linesBefore - 1) * lineHeight - (textarea.clientHeight / 3);
+            }
+        }
+    }
 
     async function initMap() {
         const data = await loadContent();
@@ -290,121 +407,169 @@ async function loadContent() {
             }
         });
 
+        // Config variables for GeoJSON
+        const geoStyle = { color: "#00f2ff", weight: 4, opacity: 0.9, fillColor: "#00f2ff", fillOpacity: 0.2 };
+        const activeStyle = { color: "#ff4d4d", weight: 5, opacity: 1, fillColor: "#ff4d4d", fillOpacity: 0.4 };
+        let geoJsonLayerGroup = null;
+        let selectedFeatureLayer = null;
+
         map.on('click', () => {
             document.getElementById('info-capsule').classList.remove('visible');
+            // Deselect visual feature if clicked outside
+            if (selectedFeatureLayer && geoJsonLayerGroup) {
+                geoJsonLayerGroup.resetStyle(selectedFeatureLayer);
+                selectedFeatureLayer = null;
+            }
         });
 
-        const geoStyle = { color: "#00f2ff", weight: 4, opacity: 0.9, fillColor: "#00f2ff", fillOpacity: 0.2 };
-
         if (item.resolved_url || item.archivo) {
-            const path = item.resolved_url || item.archivo; // URL absoluta (Dropbox o donde sea)
+            const path = item.resolved_url || item.archivo; 
             fetch(path)
                 .then(r => r.json())
                 .then(geoData => {
-                    const layer = L.geoJSON(geoData, {
+                    // Populate Textarea with pretty JSON
+                    document.getElementById('raw-textarea').value = JSON.stringify(geoData, null, 2);
+
+                    geoJsonLayerGroup = L.geoJSON(geoData, {
                         style: geoStyle,
                         renderer: canvasRenderer,
-                        interactive: true
+                        interactive: true,
+                        onEachFeature: function (feature, layer) {
+                            layer.on('click', function (e) {
+                                L.DomEvent.stopPropagation(e);
+                                
+                                // Reset previously selected feature visual style
+                                if (selectedFeatureLayer) {
+                                    geoJsonLayerGroup.resetStyle(selectedFeatureLayer);
+                                }
+                                // Highlight current feature
+                                if (layer.setStyle) {
+                                    layer.setStyle(activeStyle);
+                                }
+                                selectedFeatureLayer = layer;
+
+                                // Center map onto clicked specific feature
+                                if (layer.getBounds) {
+                                    map.flyToBounds(layer.getBounds(), { padding: [40, 40], duration: 0.6, maxZoom: 17 });
+                                } else if (layer.getLatLng) { // Point fallback
+                                    map.flyTo(layer.getLatLng(), 17, { duration: 0.6 });
+                                }
+
+                                // Populate Capsule Data dynamically based on GeoJSON 'properties'
+                                const props = feature.properties || {};
+                                const title = props.name || props.nombre || props.title || item.nombre || 'Infraestructura';
+                                let descHtml = props.description || props.descripcion || props.desc || item.descripcion || 'Geometría estructural del proyecto.';
+
+                                // Optional Rich Content (Image handling)
+                                if (props.image || props.image_url) {
+                                    const imgUrl = props.image || props.image_url;
+                                    descHtml = `<img src="${imgUrl}" alt="Feature Image"><br>${descHtml}`;
+                                }
+
+                                document.getElementById('capsule-title').textContent = title;
+                                document.getElementById('capsule-desc').innerHTML = descHtml;
+                                document.getElementById('capsule-meta').textContent = props.type || (feature.geometry ? feature.geometry.type : 'Vector');
+                                document.getElementById('info-capsule').classList.add('visible');
+
+                                // Trigger Raw Data highlight
+                                highlightFeatureInTextarea(feature);
+                            });
+                        }
                     }).addTo(map);
 
-                    const bounds = layer.getBounds();
+                    // Fit to bounds of ENTIRE geojson data rather than relying on a 1 point center.
+                    const bounds = geoJsonLayerGroup.getBounds();
                     if (bounds.isValid()) {
-                        map.fitBounds(bounds, { padding: [20, 20] });
+                        // MaxZoom set to 16 prevents Leaflet from overly zooming into point/small objects.
+                        map.fitBounds(bounds, { padding: [20, 20], maxZoom: 16 });
+                        
                         const center = bounds.getCenter();
                         const osmBtn = document.getElementById('btn-osm');
                         osmBtn.href = `https://www.openstreetmap.org/?mlat=${center.lat}&mlon=${center.lng}#map=17/${center.lat}/${center.lng}`;
                         osmBtn.style.display = 'flex';
                     }
-
-                    layer.on('click', function (e) {
-                        L.DomEvent.stopPropagation(e);
-                        const b = e.layer.getBounds ? e.layer.getBounds() : bounds;
-                        if (b && b.isValid()) {
-                            map.flyToBounds(b, { padding: [40, 40], duration: 0.6 });
-                        }
-                        document.getElementById('capsule-title').textContent = item.nombre || 'Infraestructura';
-                        document.getElementById('capsule-desc').textContent = item.descripcion || 'Geometría estructural del proyecto.';
-                        document.getElementById('capsule-meta').textContent = item.tamano ? `${item.tamano} | GeoJSON` : 'Capa Vectorial GeoJSON';
-                        document.getElementById('info-capsule').classList.add('visible');
-                    });
                 })
                 .catch(err => {
                     console.error('Error leyendo GeoJSON', err);
+                    document.getElementById('raw-textarea').value = "Error leyendo o parseando el archivo JSON/GeoJSON.";
                 });
         }
     }
 
-   function setupCollectionSideNav(allData, currentItem) {
-    const collName = currentItem.coleccion || currentItem.collection;
-    if (!collName) return;
+    // System core - untouched
+    function setupCollectionSideNav(allData, currentItem) {
+        const collName = currentItem.coleccion || currentItem.collection;
+        if (!collName) return;
 
-    const siblings = allData.filter(i => i.coleccion === collName || i.collection === collName);
-    if (siblings.length <= 1) return;
+        const siblings = allData.filter(i => i.coleccion === collName || i.collection === collName);
+        if (siblings.length <= 1) return;
 
-    const container = document.getElementById('collection-nav');
-    container.style.display = 'flex';
+        const container = document.getElementById('collection-nav');
+        container.style.display = 'flex';
 
-    const itemList = document.getElementById('collItemList');
-
-    const slugDirArc = getQueryParam('slugDirArc');
-    const source = getQueryParam('source');
-    const extraSlug = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
-    const extraSource = source ? `&source=${encodeURIComponent(source)}` : '';
-    const extra = `${extraSlug}${extraSource}`;
-
-    itemList.innerHTML = siblings.map(i => {
-        const visorType = i.visor || 'media';
-        const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
-        return `
-            <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
-                ${i.nombre || i.id}
-            </a>`;
-    }).join('');
-
-    document.getElementById('collTab').onclick = (e) => {
-        e.stopPropagation();
-        container.classList.toggle('open');
-    };
-
-    document.addEventListener('pointerdown', e => {
-        if (!container.contains(e.target) && !e.target.closest('.leaflet-control')) {
-            container.classList.remove('open');
-        }
-    });
-}
-
-    initMap();
-   (function setupBackButton() {
-    const backBtn = document.getElementById('back-btn');
-    if (!backBtn) return;
-
-    if (isLocalSource()) {
-        backBtn.innerHTML = '<span>✕</span><span class="btn-back-text">&nbsp;Cerrar</span>';
-        backBtn.title = 'Cerrar vista previa';
-        backBtn.onclick = (e) => {
-            e.preventDefault();
-            window.close();
-        };
-        return;
-    }
-
-    backBtn.innerHTML = '<span>←</span><span class="btn-back-text">&nbsp;Volver</span>';
-    backBtn.title = 'Volver';
-    backBtn.onclick = (e) => {
-        e.preventDefault();
+        const itemList = document.getElementById('collItemList');
 
         const slugDirArc = getQueryParam('slugDirArc');
+        const source = getQueryParam('source');
+        const extraSlug = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
+        const extraSource = source ? `&source=${encodeURIComponent(source)}` : '';
+        const extra = `${extraSlug}${extraSource}`;
 
-        if (slugDirArc) {
-            const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
-            window.location.href = target;
-        } else if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = 'index.html';
+        itemList.innerHTML = siblings.map(i => {
+            const visorType = i.visor || 'media';
+            const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
+            return `
+                <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
+                    ${i.nombre || i.id}
+                </a>`;
+        }).join('');
+
+        document.getElementById('collTab').onclick = (e) => {
+            e.stopPropagation();
+            container.classList.toggle('open');
+        };
+
+        document.addEventListener('pointerdown', e => {
+            if (!container.contains(e.target) && !e.target.closest('.leaflet-control')) {
+                container.classList.remove('open');
+            }
+        });
+    }
+
+    initMap();
+
+    // System core - untouched
+    (function setupBackButton() {
+        const backBtn = document.getElementById('back-btn');
+        if (!backBtn) return;
+
+        if (isLocalSource()) {
+            backBtn.innerHTML = '<span>✕</span><span class="btn-back-text">&nbsp;Cerrar</span>';
+            backBtn.title = 'Cerrar vista previa';
+            backBtn.onclick = (e) => {
+                e.preventDefault();
+                window.close();
+            };
+            return;
         }
-    };
-})();
+
+        backBtn.innerHTML = '<span>←</span><span class="btn-back-text">&nbsp;Volver</span>';
+        backBtn.title = 'Volver';
+        backBtn.onclick = (e) => {
+            e.preventDefault();
+
+            const slugDirArc = getQueryParam('slugDirArc');
+
+            if (slugDirArc) {
+                const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+                window.location.href = target;
+            } else if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        };
+    })();
 </script>
 </body>
 </html>
