@@ -9,235 +9,46 @@
           href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            background: #050608;
-            color: #e5e7eb;
-            font-family: system-ui, sans-serif;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        header {
-            height: 52px;
-            min-height: 52px;
-            padding: 0 0.8rem;
-            background: #0d1117;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            z-index: 2000;
-            user-select: none;
-        }
-        #map-title {
-            flex: 1;
-            font-size: 0.85rem;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: center;
-        }
-        .btn-header {
-            color: #9ca3af;
-            text-decoration: none;
-            font-size: 0.8rem;
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 5px 10px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            white-space: nowrap;
-            flex-shrink: 0;
-            background: rgba(255,255,255,0.02);
-        }
+        body { background: #050608; color: #e5e7eb; font-family: system-ui, sans-serif; position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
+        header { height: 52px; min-height: 52px; padding: 0 0.8rem; background: #0d1117; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; gap: 10px; z-index: 2000; user-select: none; }
+        #map-title { flex: 1; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+        .btn-header { color: #9ca3af; text-decoration: none; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 4px; transition: all 0.2s ease; display: flex; align-items: center; white-space: nowrap; flex-shrink: 0; background: rgba(255,255,255,0.02); }
         .btn-header:hover { color: #fff; background: rgba(255,255,255,0.05); border-color: #00f2ff; }
-        
         .header-actions { display: flex; gap: 8px; align-items: center; }
-
-        @media (max-width: 480px) {
-            .btn-back-text, .btn-osm-text, .btn-raw-text { display: none; }
-            .btn-osm-short { display: inline !important; }
-            header { padding: 0 0.5rem; }
-        }
-        
-        @media (min-width: 481px) { 
-            .btn-osm-short { display: none; } 
-        }
-
-        #map {
-            flex: 1;
-            width: 100%;
-            background: #050608;
-            position: relative;
-        }
-
+        @media (max-width: 480px) { .btn-back-text, .btn-osm-text, .btn-raw-text { display: none; } .btn-osm-short { display: inline !important; } header { padding: 0 0.5rem; } }
+        @media (min-width: 481px) { .btn-osm-short { display: none; } }
+        #map { flex: 1; width: 100%; background: #050608; position: relative; }
         .leaflet-control-rotate, .leaflet-control-compass { display: none !important; }
-
-        /* Raw Data Panel */
-        #raw-panel {
-            position: absolute;
-            top: 52px; /* Matches header height */
-            bottom: 0;
-            left: -100%;
-            width: 400px;
-            max-width: 90%;
-            background: rgba(13, 17, 23, 0.98);
-            backdrop-filter: blur(10px);
-            border-right: 1px solid rgba(0, 242, 255, 0.3);
-            z-index: 1800;
-            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-        }
+        #raw-panel { position: absolute; top: 52px; bottom: 0; left: -100%; width: 400px; max-width: 90%; background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(10px); border-right: 1px solid rgba(0, 242, 255, 0.3); z-index: 1800; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
         #raw-panel.open { left: 0; }
-        
-        #raw-panel-header {
-            padding: 10px 15px;
-            background: rgba(255,255,255,0.03);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #00f2ff;
-        }
-        .raw-close {
-            background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer;
-        }
+        #raw-panel-header { padding: 10px 15px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600; color: #00f2ff; }
+        .raw-close { background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer; }
         .raw-close:hover { color: #fff; }
-
-        #raw-textarea {
-            flex: 1;
-            width: 100%;
-            background: transparent;
-            color: #e5e7eb;
-            border: none;
-            padding: 15px;
-            font-family: monospace;
-            font-size: 0.75rem;
-            resize: none;
-            outline: none;
-            white-space: pre;
-            overflow: auto;
-            line-height: 1.4;
-        }
+        #raw-textarea { flex: 1; width: 100%; background: transparent; color: #e5e7eb; border: none; padding: 15px; font-family: monospace; font-size: 0.75rem; resize: none; outline: none; white-space: pre; overflow: auto; line-height: 1.4; }
         #raw-textarea::selection { background: rgba(0, 242, 255, 0.3); }
-
-        /* Info Capsule */
-        #info-capsule {
-            position: absolute;
-            bottom: -300px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 92%;
-            max-width: 400px;
-            background: rgba(13, 17, 23, 0.95);
-            border: 1px solid rgba(0, 242, 255, 0.3);
-            border-radius: 12px;
-            padding: 1.2rem;
-            z-index: 1500;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
-            transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-            pointer-events: none;
-            opacity: 0;
-        }
-        #info-capsule.visible {
-            bottom: 25px;
-            pointer-events: auto;
-            opacity: 1;
-        }
+        #info-capsule { position: absolute; bottom: -300px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: rgba(13, 17, 23, 0.95); border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 12px; padding: 1.2rem; z-index: 1500; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; gap: 0.6rem; pointer-events: none; opacity: 0; }
+        #info-capsule.visible { bottom: 25px; pointer-events: auto; opacity: 1; }
         .capsule-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .capsule-title { font-size: 0.9rem; font-weight: 600; color: #fff; line-height: 1.2; }
-        .capsule-close {
-            background: none; border: none; color: #9ca3af; font-size: 1.5rem;
-            cursor: pointer; line-height: 0.8; padding: 0 0 5px 10px;
-        }
+        .capsule-close { background: none; border: none; color: #9ca3af; font-size: 1.5rem; cursor: pointer; line-height: 0.8; padding: 0 0 5px 10px; }
         .capsule-close:hover { color: #fff; }
-        .capsule-desc { 
-            font-size: 0.8rem; color: #9ca3af; line-height: 1.5; 
-            max-height: 200px; overflow-y: auto; 
-        }
-        .capsule-desc img {
-            max-width: 100%; border-radius: 6px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1);
-        }
+        .capsule-desc { font-size: 0.8rem; color: #9ca3af; line-height: 1.5; max-height: 200px; overflow-y: auto; }
+        .capsule-desc img { max-width: 100%; border-radius: 6px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); }
         .capsule-desc a { color: #00f2ff; }
-        .capsule-meta {
-            font-size: 0.7rem; color: #00f2ff; background: rgba(0, 242, 255, 0.1);
-            padding: 3px 8px; border-radius: 4px; align-self: flex-start;
-            margin-top: 5px; border: 1px solid rgba(0, 242, 255, 0.2);
-        }
-
-        /* Collection Nav */
-        .collection-nav-container {
-            position: absolute;
-            top: 50%;
-            right: 0;
-            transform: translateY(-50%);
-            z-index: 1100;
-            display: flex;
-            align-items: center;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .capsule-meta { font-size: 0.7rem; color: #00f2ff; background: rgba(0, 242, 255, 0.1); padding: 3px 8px; border-radius: 4px; align-self: flex-start; margin-top: 5px; border: 1px solid rgba(0, 242, 255, 0.2); }
+        .collection-nav-container { position: absolute; top: 50%; right: 0; transform: translateY(-50%); z-index: 1100; display: flex; align-items: center; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (pointer: fine) { .collection-nav-container { right: 14px; } }
-
-        .coll-side-tab {
-            background: rgba(0, 0, 0, 0.9); color: #00f2ff;
-            border: 1px solid rgba(0, 242, 255, 0.4); border-right: none;
-            padding: 18px 7px; border-radius: 10px 0 0 10px;
-            cursor: pointer; writing-mode: vertical-rl; text-transform: uppercase;
-            font-size: 0.58rem; font-weight: 800; letter-spacing: 0.15em;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.4); user-select: none;
-        }
-        .coll-panel {
-            background: #0d1117; width: 0; height: 0; overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex; flex-direction: column; border: 1px solid transparent;
-        }
-        .collection-nav-container.open .coll-panel {
-            width: 260px; height: 60vh;
-            border: 1px solid rgba(0, 242, 255, 0.3); border-right: none;
-            border-radius: 10px 0 0 10px; box-shadow: -20px 0 40px rgba(0,0,0,0.8);
-            overflow-y: auto;
-        }
-        .coll-item {
-            display: block; padding: 0.8rem 1rem; color: #9ca3af;
-            text-decoration: none; font-size: 0.75rem;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
+        .coll-side-tab { background: rgba(0, 0, 0, 0.9); color: #00f2ff; border: 1px solid rgba(0, 242, 255, 0.4); border-right: none; padding: 18px 7px; border-radius: 10px 0 0 10px; cursor: pointer; writing-mode: vertical-rl; text-transform: uppercase; font-size: 0.58rem; font-weight: 800; letter-spacing: 0.15em; box-shadow: -5px 0 15px rgba(0,0,0,0.4); user-select: none; }
+        .coll-panel { background: #0d1117; width: 0; height: 0; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; border: 1px solid transparent; }
+        .collection-nav-container.open .coll-panel { width: 260px; height: 60vh; border: 1px solid rgba(0, 242, 255, 0.3); border-right: none; border-radius: 10px 0 0 10px; box-shadow: -20px 0 40px rgba(0,0,0,0.8); overflow-y: auto; }
+        .coll-item { display: block; padding: 0.8rem 1rem; color: #9ca3af; text-decoration: none; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .coll-item:hover { background: rgba(0, 242, 255, 0.1); color: #fff; }
         .coll-item.active { color: #00f2ff; background: rgba(0, 242, 255, 0.05); border-right: 3px solid #00f2ff; }
-
-        /* Compass */
-        .compass-container {
-            position: absolute; top: 20px; right: 20px; z-index: 1000;
-            background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(255,255,255,0.2);
-            width: 46px; height: 46px; border-radius: 50%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .compass-arrow {
-            width: 0; height: 0;
-            border-left: 7px solid transparent; border-right: 7px solid transparent;
-            border-bottom: 18px solid #ff4d4d; transition: transform 0.1s linear;
-        }
+        .compass-container { position: absolute; top: 20px; right: 20px; z-index: 1000; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(255,255,255,0.2); width: 46px; height: 46px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .compass-arrow { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 18px solid #ff4d4d; transition: transform 0.1s linear; }
         .compass-label { font-size: 9px; font-weight: bold; color: #fff; }
-
         .leaflet-control-scale { margin-bottom: 25px !important; margin-left: 15px !important; }
-        .leaflet-control-scale-line {
-            background: rgba(13, 17, 23, 0.8) !important; color: #00f2ff !important;
-            border: 1px solid #00f2ff !important; border-top: none !important; font-size: 11px !important; text-shadow: none !important;
-        }
+        .leaflet-control-scale-line { background: rgba(13, 17, 23, 0.8) !important; color: #00f2ff !important; border: 1px solid #00f2ff !important; border-top: none !important; font-size: 11px !important; text-shadow: none !important; }
     </style>
 </head>
 <body>
@@ -248,7 +59,7 @@
     <div id="map-title">Cargando...</div>
     <div class="header-actions">
         <a id="btn-raw" href="#" class="btn-header">
-            <span>{ }</span>&nbsp;<span class="btn-raw-text">Raw</span>
+            <span>{ }</span>&nbsp;<span class="btn-raw-text">DEV MODE</span>
         </a>
         <a id="btn-osm" href="#" target="_blank" class="btn-header" style="display: none;">
             <span>⇗</span>&nbsp;<span class="btn-osm-text">OpenStreetMap</span><span class="btn-osm-short" style="display:none">OSM</span>
@@ -333,7 +144,6 @@
 
     const itemId = getQueryParam('id');
 
-    // UI Event Listeners for Raw Panel
     document.getElementById('btn-raw').addEventListener('click', (e) => {
         e.preventDefault();
         document.getElementById('raw-panel').classList.toggle('open');
@@ -343,15 +153,13 @@
         document.getElementById('raw-panel').classList.remove('open');
     });
 
-    // Helper to highlight a clicked feature in the Raw JSON Textarea
     function highlightFeatureInTextarea(feature) {
         const panel = document.getElementById('raw-panel');
-        if (!panel.classList.contains('open')) return; // Optional: Only execute if open for performance
+        if (!panel.classList.contains('open')) return;
 
         const textarea = document.getElementById('raw-textarea');
         const text = textarea.value;
 
-        // Try to find a unique string subset from the geometry coordinates to locate the feature block
         let searchString = "";
         if (feature.geometry && feature.geometry.coordinates) {
             const coordsStr = JSON.stringify(feature.geometry.coordinates);
@@ -362,13 +170,541 @@
             const index = text.indexOf(searchString);
             if (index !== -1) {
                 textarea.focus();
-                textarea.setSelectionRange(index - 20, index + 100); // Visual cue mapping block
-                
+                textarea.setSelectionRange(Math.max(0, index - 20), Math.min(text.length, index + 100));
                 const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight) || 16;
                 const linesBefore = text.substring(0, index).split('\n').length;
                 textarea.scrollTop = (linesBefore - 1) * lineHeight - (textarea.clientHeight / 3);
             }
         }
+    }
+
+    function normalizeLng180(lng) {
+        let x = lng;
+        while (x > 180) x -= 360;
+        while (x < -180) x += 360;
+        return x;
+    }
+
+    function offsetLatLngs(latlngs, offset) {
+        return latlngs.map(([lat, lng]) => [lat, lng + offset]);
+    }
+
+    function getFeatureKey(feature) {
+        return (
+            (feature.properties && (feature.properties.featureid || feature.properties.id || feature.properties.name || feature.properties.nombre || feature.properties.title)) ||
+            JSON.stringify(feature.geometry || {})
+        );
+    }
+
+    function buildFeaturePopup(feature, item) {
+        const props = feature.properties || {};
+        const title = props.name || props.nombre || props.title || item.nombre || 'Infraestructura';
+        let descHtml = props.description || props.descripcion || props.desc || item.descripcion || 'Geometría estructural del proyecto.';
+
+        if (props.image || props.image_url) {
+            const imgUrl = props.image || props.image_url;
+            descHtml = `<img src="${imgUrl}" alt="Feature Image"><br>${descHtml}`;
+        }
+
+        return {
+            title,
+            descHtml,
+            meta: props.type || (feature.geometry ? feature.geometry.type : 'Vector')
+        };
+    }
+
+    function showFeatureInfo(feature, item) {
+        const info = buildFeaturePopup(feature, item);
+        document.getElementById('capsule-title').textContent = info.title;
+        document.getElementById('capsule-desc').innerHTML = info.descHtml;
+        document.getElementById('capsule-meta').textContent = info.meta;
+        document.getElementById('info-capsule').classList.add('visible');
+        highlightFeatureInTextarea(feature);
+    }
+
+    function getLayerBoundsSafe(layer) {
+        if (!layer) return null;
+        if (typeof layer.getBounds === 'function') {
+            const b = layer.getBounds();
+            if (b && b.isValid && b.isValid()) return b;
+        }
+        if (typeof layer.getLatLng === 'function') {
+            const ll = layer.getLatLng();
+            if (ll) return L.latLngBounds(ll, ll);
+        }
+        return null;
+    }
+
+    function cloneBounds(bounds) {
+        return L.latLngBounds(bounds.getSouthWest(), bounds.getNorthEast());
+    }
+
+    function combineBounds(boundsA, boundsB) {
+        if (!boundsA && !boundsB) return null;
+        if (!boundsA) return cloneBounds(boundsB);
+        if (!boundsB) return cloneBounds(boundsA);
+        const combined = cloneBounds(boundsA);
+        combined.extend(boundsB.getSouthWest());
+        combined.extend(boundsB.getNorthEast());
+        return combined;
+    }
+
+    function splitLineAtAntimeridian(coords) {
+        if (!Array.isArray(coords) || coords.length < 2) return [];
+
+        const parts = [];
+        let currentPart = [];
+        let currentWorldOffset = 0;
+        let partIndex = 0;
+        let crosses = false;
+
+        const pushCurrentPart = () => {
+            if (currentPart.length >= 2) {
+                parts.push({
+                    latlngs: currentPart.slice(),
+                    worldOffset: currentWorldOffset,
+                    partIndex: partIndex++
+                });
+            }
+        };
+
+        let prev = coords[0];
+        currentPart.push([Number(prev[1]), Number(prev[0]) + currentWorldOffset]);
+
+        for (let i = 1; i < coords.length; i++) {
+            const curr = coords[i];
+            const prevLng = Number(prev[0]);
+            const prevLat = Number(prev[1]);
+            const currLng = Number(curr[0]);
+            const currLat = Number(curr[1]);
+
+            const delta = currLng - prevLng;
+
+            if (Math.abs(delta) > 180) {
+                crosses = true;
+
+                const crossingEastward = delta > 180;
+                const edgeFrom = crossingEastward ? -180 : 180;
+                const edgeTo = crossingEastward ? 180 : -180;
+
+                const distA = Math.abs(edgeFrom - prevLng);
+                const distB = Math.abs(currLng - edgeTo);
+                const t = (distA + distB) === 0 ? 0.5 : distA / (distA + distB);
+                const crossLat = prevLat + (currLat - prevLat) * t;
+
+                currentPart.push([crossLat, edgeFrom + currentWorldOffset]);
+                pushCurrentPart();
+
+                currentWorldOffset += crossingEastward ? -360 : 360;
+                currentPart = [[crossLat, edgeTo + currentWorldOffset], [currLat, currLng + currentWorldOffset]];
+            } else {
+                currentPart.push([currLat, currLng + currentWorldOffset]);
+            }
+
+            prev = curr;
+        }
+
+        pushCurrentPart();
+
+        return {
+            parts,
+            crossesAntimeridian: crosses
+        };
+    }
+
+    function centerPartNearPrimeWorld(part) {
+        const lngs = part.latlngs.map(p => p[1]);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+        const center = (minLng + maxLng) / 2;
+        const shiftWorlds = Math.round(center / 360);
+        const shift = -shiftWorlds * 360;
+
+        return {
+            ...part,
+            latlngs: offsetLatLngs(part.latlngs, shift),
+            worldOffset: part.worldOffset + shift
+        };
+    }
+
+    function buildWrappedLineParts(coords) {
+        const split = splitLineAtAntimeridian(coords);
+        return {
+            crossesAntimeridian: split.crossesAntimeridian,
+            parts: split.parts.map(centerPartNearPrimeWorld)
+        };
+    }
+
+    function getWorldCopyOffsetsForPart(part) {
+        const offsets = [-720, -360, 0, 360, 720];
+        const lngs = part.latlngs.map(p => p[1]);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+
+        return offsets.filter(offset => {
+            const shiftedMin = minLng + offset;
+            const shiftedMax = maxLng + offset;
+            return shiftedMax >= -540 && shiftedMin <= 540;
+        });
+    }
+
+    function registerFeatureLayer(state, feature, layer, baseStyle, meta) {
+        const featureId = getFeatureKey(feature);
+
+        if (!state.featureRegistry.has(featureId)) {
+            state.featureRegistry.set(featureId, {
+                feature,
+                layers: [],
+                baseStyle: baseStyle,
+                crossesAntimeridian: false
+            });
+        }
+
+        const entry = state.featureRegistry.get(featureId);
+        entry.layers.push({
+            layer,
+            worldOffset: meta.worldOffset || 0,
+            logicalPartIndex: meta.logicalPartIndex ?? 0,
+            isAntimeridianSplitPart: !!meta.isAntimeridianSplitPart,
+            latlngs: meta.latlngs || null
+        });
+
+        if (meta.isAntimeridianSplitPart) {
+            entry.crossesAntimeridian = true;
+        }
+
+        return entry;
+    }
+
+    function applyStyleToFeatureCopies(featureEntry, style) {
+        if (!featureEntry || !featureEntry.layers) return;
+        featureEntry.layers.forEach(ref => {
+            if (ref.layer && typeof ref.layer.setStyle === 'function') {
+                ref.layer.setStyle(style);
+            }
+        });
+    }
+
+    function resetFeatureCopies(featureEntry) {
+        if (!featureEntry) return;
+        applyStyleToFeatureCopies(featureEntry, featureEntry.baseStyle);
+    }
+
+    function selectFeatureCopies(featureEntry, activeStyle) {
+        applyStyleToFeatureCopies(featureEntry, activeStyle);
+    }
+
+    function buildBoundsFromRefs(refs) {
+        let bounds = null;
+        refs.forEach(ref => {
+            const b = getLayerBoundsSafe(ref.layer);
+            if (!b) return;
+            bounds = combineBounds(bounds, b);
+        });
+        return bounds;
+    }
+
+    function getFeatureFocusBoundsFromPart(featureEntry, clickedRef) {
+        if (!featureEntry || !clickedRef) return null;
+
+        if (!featureEntry.crossesAntimeridian || !clickedRef.isAntimeridianSplitPart) {
+            return getLayerBoundsSafe(clickedRef.layer);
+        }
+
+        const sameWorldMatchingPart = featureEntry.layers.filter(ref =>
+            ref.worldOffset === clickedRef.worldOffset &&
+            ref.logicalPartIndex === clickedRef.logicalPartIndex &&
+            ref.isAntimeridianSplitPart
+        );
+
+        const pairedPart = featureEntry.layers.find(ref =>
+            ref.worldOffset === clickedRef.worldOffset &&
+            ref.logicalPartIndex !== clickedRef.logicalPartIndex &&
+            ref.isAntimeridianSplitPart
+        );
+
+        let bounds = buildBoundsFromRefs(sameWorldMatchingPart);
+
+        if (pairedPart) {
+            const pairedBounds = getLayerBoundsSafe(pairedPart.layer);
+            bounds = combineBounds(bounds, pairedBounds);
+        }
+
+        return bounds || getLayerBoundsSafe(clickedRef.layer);
+    }
+
+    function makeInteractiveLayer(layer, feature, item, map, state, geoStyle, activeStyle, meta) {
+        const featureEntry = registerFeatureLayer(state, feature, layer, geoStyle, meta);
+
+        layer.on('click', function (e) {
+            L.DomEvent.stopPropagation(e);
+
+            if (state.selectedFeatureEntry) {
+                resetFeatureCopies(state.selectedFeatureEntry);
+            }
+
+            selectFeatureCopies(featureEntry, activeStyle);
+            state.selectedFeatureEntry = featureEntry;
+
+            const clickedRef = featureEntry.layers.find(ref => ref.layer === layer);
+            const focusBounds = getFeatureFocusBoundsFromPart(featureEntry, clickedRef);
+
+            if (focusBounds && focusBounds.isValid()) {
+                map.flyToBounds(focusBounds, { padding: [40, 40], duration: 0.6, maxZoom: 17 });
+            } else if (layer.getLatLng) {
+                map.flyTo(layer.getLatLng(), 17, { duration: 0.6 });
+            }
+
+            showFeatureInfo(feature, item);
+        });
+
+        return layer;
+    }
+
+    function buildLineLayers(feature, style, activeStyle, item, map, state, boundsCollector) {
+        const geom = feature.geometry;
+        const lines = geom.type === 'LineString' ? [geom.coordinates] : geom.coordinates;
+        const group = L.featureGroup();
+
+        lines.forEach(lineCoords => {
+            const wrapped = buildWrappedLineParts(lineCoords);
+            if (!wrapped.parts.length) return;
+
+            wrapped.parts.forEach(part => {
+                const copyOffsets = getWorldCopyOffsetsForPart(part);
+                const baseOffset = copyOffsets.includes(0) ? 0 : (copyOffsets[0] || 0);
+
+                copyOffsets.forEach(copyOffset => {
+                    const shiftedLatLngs = offsetLatLngs(part.latlngs, copyOffset);
+                    const effectiveWorldOffset = part.worldOffset + copyOffset;
+
+                    const layer = makeInteractiveLayer(
+                        L.polyline(shiftedLatLngs, style),
+                        feature,
+                        item,
+                        map,
+                        state,
+                        style,
+                        activeStyle,
+                        {
+                            worldOffset: effectiveWorldOffset,
+                            logicalPartIndex: part.partIndex,
+                            isAntimeridianSplitPart: wrapped.crossesAntimeridian,
+                            latlngs: shiftedLatLngs
+                        }
+                    );
+
+                    group.addLayer(layer);
+
+                    if (copyOffset === baseOffset) {
+                        boundsCollector.addLayer(L.polyline(shiftedLatLngs, style));
+                    }
+                });
+            });
+        });
+
+        return group;
+    }
+
+    function buildPolygonLayers(feature, style, activeStyle, item, map, state, boundsCollector) {
+        const geom = feature.geometry;
+        const polygons = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+        const group = L.featureGroup();
+
+        polygons.forEach(poly => {
+            const rings = poly.map(ring => ring.map(coord => [coord[1], coord[0]])).filter(r => r.length);
+            if (!rings.length) return;
+
+            const baseLayer = makeInteractiveLayer(
+                L.polygon(rings, style),
+                feature,
+                item,
+                map,
+                state,
+                style,
+                activeStyle,
+                {
+                    worldOffset: 0,
+                    logicalPartIndex: 0,
+                    isAntimeridianSplitPart: false,
+                    latlngs: rings[0]
+                }
+            );
+
+            group.addLayer(baseLayer);
+            boundsCollector.addLayer(L.polygon(rings, style));
+        });
+
+        return group;
+    }
+
+    function buildPointLayer(feature, style, activeStyle, item, map, state, boundsCollector) {
+        const geom = feature.geometry;
+
+        if (geom.type === 'Point') {
+            const layer = L.circleMarker([geom.coordinates[1], geom.coordinates[0]], {
+                color: style.color,
+                weight: 2,
+                opacity: 1,
+                fillColor: style.fillColor,
+                fillOpacity: 0.9,
+                radius: 6
+            });
+
+            boundsCollector.addLayer(L.circleMarker([geom.coordinates[1], geom.coordinates[0]], { radius: 1 }));
+
+            return makeInteractiveLayer(
+                layer,
+                feature,
+                item,
+                map,
+                state,
+                { color: style.color, weight: 2, opacity: 1, fillColor: style.fillColor, fillOpacity: 0.9, radius: 6 },
+                { color: activeStyle.color, weight: 2, opacity: 1, fillColor: activeStyle.fillColor, fillOpacity: 0.9, radius: 6 },
+                {
+                    worldOffset: 0,
+                    logicalPartIndex: 0,
+                    isAntimeridianSplitPart: false,
+                    latlngs: [[geom.coordinates[1], geom.coordinates[0]]]
+                }
+            );
+        }
+
+        if (geom.type === 'MultiPoint') {
+            const group = L.featureGroup();
+
+            geom.coordinates.forEach(c => {
+                const layer = L.circleMarker([c[1], c[0]], {
+                    color: style.color,
+                    weight: 2,
+                    opacity: 1,
+                    fillColor: style.fillColor,
+                    fillOpacity: 0.9,
+                    radius: 6
+                });
+
+                group.addLayer(makeInteractiveLayer(
+                    layer,
+                    feature,
+                    item,
+                    map,
+                    state,
+                    { color: style.color, weight: 2, opacity: 1, fillColor: style.fillColor, fillOpacity: 0.9, radius: 6 },
+                    { color: activeStyle.color, weight: 2, opacity: 1, fillColor: activeStyle.fillColor, fillOpacity: 0.9, radius: 6 },
+                    {
+                        worldOffset: 0,
+                        logicalPartIndex: 0,
+                        isAntimeridianSplitPart: false,
+                        latlngs: [[c[1], c[0]]]
+                    }
+                ));
+
+                boundsCollector.addLayer(L.circleMarker([c[1], c[0]], { radius: 1 }));
+            });
+
+            return group;
+        }
+
+        return null;
+    }
+
+    function buildFeatureLayer(feature, style, activeStyle, item, map, state, boundsCollector) {
+        if (!feature || !feature.geometry) return null;
+        const type = feature.geometry.type;
+
+        if (type === 'LineString' || type === 'MultiLineString') {
+            return buildLineLayers(feature, style, activeStyle, item, map, state, boundsCollector);
+        }
+
+        if (type === 'Polygon' || type === 'MultiPolygon') {
+            return buildPolygonLayers(feature, style, activeStyle, item, map, state, boundsCollector);
+        }
+
+        if (type === 'Point' || type === 'MultiPoint') {
+            return buildPointLayer(feature, style, activeStyle, item, map, state, boundsCollector);
+        }
+
+        try {
+            const layer = L.geoJSON(feature, { style });
+            boundsCollector.addLayer(layer);
+            return layer;
+        } catch (err) {
+            console.warn('Feature no soportado:', feature, err);
+            return null;
+        }
+    }
+
+    function redrawVectorRoot(vectorRoot) {
+        if (!vectorRoot) return;
+        vectorRoot.eachLayer(layer => {
+            if (typeof layer.redraw === 'function') layer.redraw();
+            if (layer.eachLayer) {
+                layer.eachLayer(inner => {
+                    if (typeof inner.redraw === 'function') inner.redraw();
+                });
+            }
+        });
+    }
+
+    function stabilizeInitialView(map, vectorRoot) {
+        map.invalidateSize({ pan: false });
+        redrawVectorRoot(vectorRoot);
+
+        requestAnimationFrame(() => {
+            map.invalidateSize({ pan: false });
+            redrawVectorRoot(vectorRoot);
+            map.panBy([0, 0], { animate: false });
+        });
+
+        setTimeout(() => {
+            map.invalidateSize({ pan: false });
+            redrawVectorRoot(vectorRoot);
+            map.panBy([0, 0], { animate: false });
+        }, 120);
+
+        setTimeout(() => {
+            map.invalidateSize({ pan: false });
+            redrawVectorRoot(vectorRoot);
+            map.panBy([0, 0], { animate: false });
+        }, 300);
+    }
+
+    function getWorldPixelWidthAtZoom(zoom) {
+        return 256 * Math.pow(2, zoom);
+    }
+
+    function computeThreeWorldMinZoom(map) {
+        const mapWidth = map.getSize().x || window.innerWidth || 1024;
+        const maxZoom = typeof map.getMaxZoom === 'function' && Number.isFinite(map.getMaxZoom()) ? map.getMaxZoom() : 22;
+
+        for (let z = maxZoom; z >= -6; z--) {
+            const worldWidth = getWorldPixelWidthAtZoom(z);
+            const threeWorldsWidth = worldWidth * 3;
+            if (threeWorldsWidth <= mapWidth) {
+                return z + 1;
+            }
+        }
+
+        return 0;
+    }
+
+    function applyThreeWorldZoomLimit(map) {
+        const minZoom = computeThreeWorldMinZoom(map);
+        map.setMinZoom(minZoom);
+
+        if (map.getZoom() < minZoom) {
+            map.setZoom(minZoom, { animate: false });
+        }
+    }
+
+    function applyThreeWorldPanLimit(map) {
+        const latLimit = 85;
+        const lngLimit = 540;
+        const bounds = L.latLngBounds(
+            L.latLng(-latLimit, -lngLimit),
+            L.latLng(latLimit, lngLimit)
+        );
+        map.setMaxBounds(bounds);
     }
 
     async function initMap() {
@@ -379,23 +715,30 @@
         document.getElementById('map-title').textContent = item.nombre || item.id;
         setupCollectionSideNav(data, item);
 
-        const layerConfig = { attribution: '&copy; CARTO' };
-        const dark  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', layerConfig);
-        const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', layerConfig);
-        const osm   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', layerConfig);
-
-        const canvasRenderer = L.canvas({ padding: 0.5, tolerance: 10 });
+        const dark  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', noWrap: false });
+        const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', noWrap: false });
+        const osm   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', noWrap: false });
 
         const map = L.map('map', {
             center: [item.lat || -33.04, item.lon || -71.61],
             zoom: item.zoom || 13,
+            minZoom: 0,
             layers: [dark],
             rotate: true,
             touchRotate: true,
             rotateControl: false,
             zoomAnimation: true,
-            renderer: canvasRenderer
+            fadeAnimation: true,
+            markerZoomAnimation: true,
+            updateWhenZooming: false,
+            preferCanvas: false,
+            worldCopyJump: false,
+            touchZoom: 'center',
+            bounceAtZoomLimits: false,
+            maxBoundsViscosity: 1.0
         });
+
+        applyThreeWorldPanLimit(map);
 
         L.control.layers({ "Oscuro": dark, "Claro": light, "Color": osm }, null, { position: 'topleft' }).addTo(map);
         L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
@@ -407,87 +750,87 @@
             }
         });
 
-        // Config variables for GeoJSON
-        const geoStyle = { color: "#00f2ff", weight: 4, opacity: 0.9, fillColor: "#00f2ff", fillOpacity: 0.2 };
-        const activeStyle = { color: "#ff4d4d", weight: 5, opacity: 1, fillColor: "#ff4d4d", fillOpacity: 0.4 };
-        let geoJsonLayerGroup = null;
-        let selectedFeatureLayer = null;
+        const geoStyle = {
+            color: "#00f2ff",
+            weight: 3,
+            opacity: 0.9,
+            fillColor: "#00f2ff",
+            fillOpacity: 0.16
+        };
+
+        const activeStyle = {
+            color: "#ff4d4d",
+            weight: 4,
+            opacity: 1,
+            fillColor: "#ff4d4d",
+            fillOpacity: 0.30
+        };
+
+        const state = {
+            selectedFeatureEntry: null,
+            featureRegistry: new Map()
+        };
 
         map.on('click', () => {
             document.getElementById('info-capsule').classList.remove('visible');
-            // Deselect visual feature if clicked outside
-            if (selectedFeatureLayer && geoJsonLayerGroup) {
-                geoJsonLayerGroup.resetStyle(selectedFeatureLayer);
-                selectedFeatureLayer = null;
+            if (state.selectedFeatureEntry) {
+                resetFeatureCopies(state.selectedFeatureEntry);
             }
+            state.selectedFeatureEntry = null;
         });
 
+        let vectorRoot = null;
+        let boundsRoot = null;
+
         if (item.resolved_url || item.archivo) {
-            const path = item.resolved_url || item.archivo; 
+            const path = item.resolved_url || item.archivo;
+
             fetch(path)
                 .then(r => r.json())
                 .then(geoData => {
-                    // Populate Textarea with pretty JSON
                     document.getElementById('raw-textarea').value = JSON.stringify(geoData, null, 2);
 
-                    geoJsonLayerGroup = L.geoJSON(geoData, {
-                        style: geoStyle,
-                        renderer: canvasRenderer,
-                        interactive: true,
-                        onEachFeature: function (feature, layer) {
-                            layer.on('click', function (e) {
-                                L.DomEvent.stopPropagation(e);
-                                
-                                // Reset previously selected feature visual style
-                                if (selectedFeatureLayer) {
-                                    geoJsonLayerGroup.resetStyle(selectedFeatureLayer);
-                                }
-                                // Highlight current feature
-                                if (layer.setStyle) {
-                                    layer.setStyle(activeStyle);
-                                }
-                                selectedFeatureLayer = layer;
+                    vectorRoot = L.featureGroup().addTo(map);
+                    boundsRoot = L.featureGroup();
 
-                                // Center map onto clicked specific feature
-                                if (layer.getBounds) {
-                                    map.flyToBounds(layer.getBounds(), { padding: [40, 40], duration: 0.6, maxZoom: 17 });
-                                } else if (layer.getLatLng) { // Point fallback
-                                    map.flyTo(layer.getLatLng(), 17, { duration: 0.6 });
-                                }
+                    const features = geoData.type === 'FeatureCollection'
+                        ? (geoData.features || [])
+                        : (geoData.type === 'Feature' ? [geoData] : []);
 
-                                // Populate Capsule Data dynamically based on GeoJSON 'properties'
-                                const props = feature.properties || {};
-                                const title = props.name || props.nombre || props.title || item.nombre || 'Infraestructura';
-                                let descHtml = props.description || props.descripcion || props.desc || item.descripcion || 'Geometría estructural del proyecto.';
+                    features.forEach(feature => {
+                        const layer = buildFeatureLayer(feature, geoStyle, activeStyle, item, map, state, boundsRoot);
+                        if (layer) vectorRoot.addLayer(layer);
+                    });
 
-                                // Optional Rich Content (Image handling)
-                                if (props.image || props.image_url) {
-                                    const imgUrl = props.image || props.image_url;
-                                    descHtml = `<img src="${imgUrl}" alt="Feature Image"><br>${descHtml}`;
-                                }
-
-                                document.getElementById('capsule-title').textContent = title;
-                                document.getElementById('capsule-desc').innerHTML = descHtml;
-                                document.getElementById('capsule-meta').textContent = props.type || (feature.geometry ? feature.geometry.type : 'Vector');
-                                document.getElementById('info-capsule').classList.add('visible');
-
-                                // Trigger Raw Data highlight
-                                highlightFeatureInTextarea(feature);
-                            });
-                        }
-                    }).addTo(map);
-
-                    // Fit to bounds of ENTIRE geojson data rather than relying on a 1 point center.
-                    const bounds = geoJsonLayerGroup.getBounds();
+                    const bounds = boundsRoot.getBounds();
                     if (bounds.isValid()) {
-                        // MaxZoom set to 16 prevents Leaflet from overly zooming into point/small objects.
-                        map.fitBounds(bounds, { padding: [20, 20], maxZoom: 16 });
-                        
+                        map.fitBounds(bounds, {
+                            padding: [20, 20],
+                            maxZoom: 16,
+                            animate: false
+                        });
+
                         const center = bounds.getCenter();
+                        map.setView([center.lat, normalizeLng180(center.lng)], map.getZoom(), { animate: false });
+
                         const osmBtn = document.getElementById('btn-osm');
-                        osmBtn.href = `https://www.openstreetmap.org/?mlat=${center.lat}&mlon=${center.lng}#map=17/${center.lat}/${center.lng}`;
+                        const safeLng = normalizeLng180(center.lng);
+                        osmBtn.href = `https://www.openstreetmap.org/?mlat=${center.lat}&mlon=${safeLng}#map=${Math.min(17, map.getZoom())}/${center.lat}/${safeLng}`;
                         osmBtn.style.display = 'flex';
                     }
+
+                    stabilizeInitialView(map, vectorRoot);
+                    applyThreeWorldZoomLimit(map);
+                    applyThreeWorldPanLimit(map);
+
+                    map.on('resize', () => {
+                        applyThreeWorldZoomLimit(map);
+                        applyThreeWorldPanLimit(map);
+                    });
+
+                    map.on('zoomend moveend resize viewreset', () => {
+                        redrawVectorRoot(vectorRoot);
+                    });
                 })
                 .catch(err => {
                     console.error('Error leyendo GeoJSON', err);
