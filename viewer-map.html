@@ -2,14 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Aio - Visor Mapas</title>
-    <link rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Aio - Visor Mapas V2.2.1</title>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: #050608; color: #e5e7eb; font-family: system-ui, sans-serif; position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: #050608; color: #e5e7eb; font-family: system-ui, sans-serif; position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
         header { height: 52px; min-height: 52px; padding: 0 0.8rem; background: #0d1117; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; gap: 10px; z-index: 2000; user-select: none; }
         #map-title { flex: 1; font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
         .btn-header { color: #9ca3af; text-decoration: none; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.15); padding: 5px 10px; border-radius: 4px; transition: all 0.2s ease; display: flex; align-items: center; white-space: nowrap; flex-shrink: 0; background: rgba(255,255,255,0.02); }
@@ -18,7 +16,6 @@
         @media (max-width: 480px) { .btn-back-text, .btn-osm-text, .btn-raw-text { display: none; } .btn-osm-short { display: inline !important; } header { padding: 0 0.5rem; } }
         @media (min-width: 481px) { .btn-osm-short { display: none; } }
         #map { flex: 1; width: 100%; background: #050608; position: relative; }
-        .leaflet-control-rotate, .leaflet-control-compass { display: none !important; }
         #raw-panel { position: absolute; top: 52px; bottom: 0; left: -100%; width: 400px; max-width: 90%; background: rgba(13, 17, 23, 0.98); backdrop-filter: blur(10px); border-right: 1px solid rgba(0, 242, 255, 0.3); z-index: 1800; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
         #raw-panel.open { left: 0; }
         #raw-panel-header { padding: 10px 15px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600; color: #00f2ff; }
@@ -26,7 +23,7 @@
         .raw-close:hover { color: #fff; }
         #raw-textarea { flex: 1; width: 100%; background: transparent; color: #e5e7eb; border: none; padding: 15px; font-family: monospace; font-size: 0.75rem; resize: none; outline: none; white-space: pre; overflow: auto; line-height: 1.4; }
         #raw-textarea::selection { background: rgba(0, 242, 255, 0.3); }
-        #info-capsule { position: absolute; bottom: -300px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: rgba(13, 17, 23, 0.95); border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 12px; padding: 1.2rem; z-index: 1500; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; gap: 0.6rem; pointer-events: none; opacity: 0; }
+        #info-capsule { position: absolute; bottom: -320px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: rgba(13, 17, 23, 0.95); border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 12px; padding: 1.2rem; z-index: 1500; box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px); transition: bottom 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease; display: flex; flex-direction: column; gap: 0.6rem; pointer-events: none; opacity: 0; }
         #info-capsule.visible { bottom: 25px; pointer-events: auto; opacity: 1; }
         .capsule-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
         .capsule-title { font-size: 0.9rem; font-weight: 600; color: #fff; line-height: 1.2; }
@@ -44,11 +41,74 @@
         .coll-item { display: block; padding: 0.8rem 1rem; color: #9ca3af; text-decoration: none; font-size: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .coll-item:hover { background: rgba(0, 242, 255, 0.1); color: #fff; }
         .coll-item.active { color: #00f2ff; background: rgba(0, 242, 255, 0.05); border-right: 3px solid #00f2ff; }
-        .compass-container { position: absolute; top: 20px; right: 20px; z-index: 1000; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(255,255,255,0.2); width: 46px; height: 46px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .compass-container { position: absolute; top: 20px; right: 20px; z-index: 1000; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(255,255,255,0.2); width: 46px; height: 46px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         .compass-arrow { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 18px solid #ff4d4d; transition: transform 0.1s linear; }
         .compass-label { font-size: 9px; font-weight: bold; color: #fff; }
-        .leaflet-control-scale { margin-bottom: 25px !important; margin-left: 15px !important; }
-        .leaflet-control-scale-line { background: rgba(13, 17, 23, 0.8) !important; color: #00f2ff !important; border: 1px solid #00f2ff !important; border-top: none !important; font-size: 11px !important; text-shadow: none !important; }
+        .viewer-toolbar { position: absolute; top: 20px; left: 15px; z-index: 1200; display: flex; flex-direction: column; gap: 8px; }
+        .toolbar-card { background: rgba(13,17,23,0.92); border: 1px solid rgba(0,242,255,0.2); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(8px); overflow: hidden; }
+        .toolbar-row { display: flex; }
+        .tool-btn { border: none; background: transparent; color: #9ca3af; min-width: 42px; height: 42px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; padding: 0 10px; border-right: 1px solid rgba(255,255,255,0.08); }
+        .tool-btn:last-child { border-right: none; }
+        .tool-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .tool-btn.active { color: #00f2ff; background: rgba(0,242,255,0.08); }
+        .time-panel { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); z-index: 1300; width: min(92vw, 560px); background: rgba(13,17,23,0.94); border: 1px solid rgba(0,242,255,0.25); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.45); backdrop-filter: blur(10px); padding: 12px 14px; display: none; pointer-events: auto; }
+        .time-panel.visible { display: block; }
+        .time-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .time-title { font-size: 0.8rem; font-weight: 700; color: #fff; }
+        .time-value { font-size: 0.78rem; color: #00f2ff; }
+        .time-slider { width: 100%; accent-color: #00f2ff; cursor: pointer; }
+        .time-meta { margin-top: 8px; font-size: 0.72rem; color: #9ca3af; }
+        .maplibregl-ctrl-top-right, .maplibregl-ctrl-top-left { top: 84px; }
+        .maplibregl-ctrl-group { background: rgba(13, 17, 23, 0.92) !important; border: 1px solid rgba(0,242,255,0.18) !important; box-shadow: 0 10px 25px rgba(0,0,0,0.25) !important; }
+        .maplibregl-ctrl-group button { background-color: transparent !important; color: #d1d5db !important; }
+        .maplibregl-ctrl-group button:hover { background: rgba(255,255,255,0.06) !important; }
+        .maplibregl-ctrl-attrib { background: rgba(13, 17, 23, 0.74) !important; color: #9ca3af !important; font-size: 10px !important; }
+        .maplibregl-ctrl-attrib a { color: #00f2ff !important; }
+        .maplibregl-canvas:focus { outline: none; }
+
+        .raw-panel-tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+        .raw-tab-btn { flex: 1; border: none; background: transparent; color: #9ca3af; padding: 10px 12px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+        .raw-tab-btn.active { color: #00f2ff; background: rgba(0,242,255,0.08); }
+        .raw-panel-view { display: none; flex: 1; min-height: 0; }
+        .raw-panel-view.active { display: flex; }
+        .feature-list-view { flex-direction: column; }
+        .feature-search-wrap { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .feature-search-input { width: 100%; height: 36px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.2); color: #e5e7eb; padding: 0 12px; outline: none; }
+        .feature-search-input:focus { border-color: rgba(0,242,255,0.45); box-shadow: 0 0 0 3px rgba(0,242,255,0.12); }
+        .feature-list-meta { padding: 8px 12px 0; font-size: 0.68rem; color: #9ca3af; }
+        .feature-table-wrap { flex: 1; overflow: auto; padding: 10px 12px 12px; }
+        .feature-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        .feature-table th { position: sticky; top: 0; background: #10151d; color: #9ca3af; text-align: left; font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .feature-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+        .feature-row { cursor: pointer; }
+        .feature-row:hover { background: rgba(0,242,255,0.06); }
+        .feature-row.active { background: rgba(0,242,255,0.11); }
+        .feature-name { font-weight: 600; color: #fff; }
+        .feature-sub { display: block; color: #9ca3af; font-size: 0.66rem; margin-top: 2px; }
+        .feature-color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,0.25); }
+        .feature-badge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 999px; font-size: 0.64rem; color: #d1d5db; white-space: nowrap; }
+        .feature-empty { padding: 18px 12px; color: #9ca3af; font-size: 0.74rem; text-align: center; }
+        .hover-tooltip { position: absolute; z-index: 1400; pointer-events: none; transform: translate(12px, 12px); background: rgba(13,17,23,0.96); color: #fff; border: 1px solid rgba(0,242,255,0.25); border-radius: 10px; padding: 8px 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); backdrop-filter: blur(8px); min-width: 120px; max-width: 260px; opacity: 0; transition: opacity 0.12s ease; }
+        .hover-tooltip.visible { opacity: 1; }
+        .hover-tooltip-title { font-size: 0.74rem; font-weight: 700; color: #fff; line-height: 1.2; }
+        .hover-tooltip-meta { margin-top: 4px; font-size: 0.66rem; color: #9ca3af; }
+        .time-panel { width: min(92vw, 700px); top: 12px; padding: 8px 12px 10px; border-radius: 999px; }
+        .time-head { margin-bottom: 6px; }
+        .time-title { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #9ca3af; }
+        .time-value { font-size: 0.74rem; font-weight: 700; }
+        .time-ruler { position: relative; padding: 8px 0 0; }
+        .time-slider { width: 100%; appearance: none; -webkit-appearance: none; background: transparent; height: 22px; position: relative; z-index: 2; }
+        .time-slider::-webkit-slider-runnable-track { height: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.12), rgba(0,242,255,0.22), rgba(255,255,255,0.12)); border-radius: 999px; }
+        .time-slider::-moz-range-track { height: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.12), rgba(0,242,255,0.22), rgba(255,255,255,0.12)); border-radius: 999px; }
+        .time-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -7px; background: #00f2ff; clip-path: polygon(50% 0%, 100% 45%, 64% 45%, 64% 100%, 36% 100%, 36% 45%, 0% 45%); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 0 0 4px rgba(0,242,255,0.14), 0 4px 16px rgba(0,0,0,0.4); cursor: ew-resize; }
+        .time-slider::-moz-range-thumb { width: 18px; height: 18px; background: #00f2ff; border: 1px solid rgba(255,255,255,0.75); border-radius: 4px 4px 2px 2px; box-shadow: 0 0 0 4px rgba(0,242,255,0.14), 0 4px 16px rgba(0,0,0,0.4); cursor: ew-resize; }
+        .time-ticks { position: absolute; left: 0; right: 0; top: 2px; height: 18px; pointer-events: none; }
+        .time-tick { position: absolute; width: 1px; background: rgba(255,255,255,0.28); bottom: 3px; height: 8px; }
+        .time-tick.major { height: 12px; background: rgba(0,242,255,0.4); }
+        .time-labels { position: relative; height: 16px; margin-top: 2px; pointer-events: none; }
+        .time-label { position: absolute; transform: translateX(-50%); font-size: 0.62rem; color: #9ca3af; white-space: nowrap; }
+        .time-meta { margin-top: 3px; font-size: 0.64rem; text-align: center; }
+        @media (max-width: 640px) { .time-panel { width: min(96vw, 680px); } .time-label { font-size: 0.58rem; } }
     </style>
 </head>
 <body>
@@ -61,7 +121,7 @@
         <a id="btn-raw" href="#" class="btn-header">
             <span>{ }</span>&nbsp;<span class="btn-raw-text">DEV MODE</span>
         </a>
-        <a id="btn-osm" href="#" target="_blank" class="btn-header" style="display: none;">
+        <a id="btn-osm" href="#" target="_blank" rel="noopener noreferrer" class="btn-header" style="display: none;">
             <span>⇗</span>&nbsp;<span class="btn-osm-text">OpenStreetMap</span><span class="btn-osm-short" style="display:none">OSM</span>
         </a>
     </div>
@@ -72,7 +132,32 @@
         <span>GeoJSON Original</span>
         <button class="raw-close" id="close-raw">×</button>
     </div>
-    <textarea id="raw-textarea" readonly spellcheck="false" placeholder="Cargando datos..."></textarea>
+    <div class="raw-panel-tabs">
+        <button id="raw-tab-text" class="raw-tab-btn active">Texto</button>
+        <button id="raw-tab-list" class="raw-tab-btn">Features</button>
+    </div>
+    <div id="raw-view-text" class="raw-panel-view active">
+        <textarea id="raw-textarea" readonly spellcheck="false" placeholder="Cargando datos..."></textarea>
+    </div>
+    <div id="raw-view-list" class="raw-panel-view feature-list-view">
+        <div class="feature-search-wrap">
+            <input id="feature-search" class="feature-search-input" type="search" placeholder="Buscar por nombre, tipo o texto...">
+        </div>
+        <div id="feature-list-meta" class="feature-list-meta">0 features</div>
+        <div class="feature-table-wrap">
+            <table class="feature-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="feature-table-body"></tbody>
+            </table>
+            <div id="feature-empty" class="feature-empty" style="display:none;">No hay features que coincidan con la búsqueda.</div>
+        </div>
+    </div>
 </div>
 
 <div class="collection-nav-container" id="collection-nav" style="display: none;">
@@ -85,25 +170,56 @@
 <div id="info-capsule">
     <div class="capsule-header">
         <div class="capsule-title" id="capsule-title">...</div>
-        <button class="capsule-close"
-                onclick="document.getElementById('info-capsule').classList.remove('visible')">×</button>
+        <button class="capsule-close" onclick="document.getElementById('info-capsule').classList.remove('visible')">×</button>
     </div>
     <div class="capsule-desc" id="capsule-desc">...</div>
     <div class="capsule-meta" id="capsule-meta">...</div>
 </div>
 
 <div id="map">
+    <div class="viewer-toolbar">
+        <div class="toolbar-card">
+            <div class="toolbar-row">
+                <button id="btn-style-dark" class="tool-btn active" title="Mapa oscuro">◐</button>
+                <button id="btn-style-light" class="tool-btn" title="Mapa claro">◌</button>
+                <button id="btn-style-osm" class="tool-btn" title="Mapa color">◎</button>
+            </div>
+        </div>
+        <div class="toolbar-card">
+            <div class="toolbar-row">
+                <button id="btn-projection" class="tool-btn" title="Alternar globo">🌐</button>
+                <button id="btn-reset-view" class="tool-btn" title="Recentrar">⌖</button>
+            </div>
+        </div>
+    </div>
+
     <div class="compass-container">
         <div id="compass-needle" class="compass-arrow"></div>
         <div class="compass-label">N</div>
     </div>
+
+    <div id="time-panel" class="time-panel">
+        <div class="time-head">
+            <div class="time-title">Timeline</div>
+            <div id="time-value" class="time-value">—</div>
+        </div>
+        <div class="time-ruler">
+            <div id="time-ticks" class="time-ticks"></div>
+            <input id="time-slider" class="time-slider" type="range" min="0" max="0" value="0" step="1">
+            <div id="time-labels" class="time-labels"></div>
+        </div>
+        <div id="time-meta" class="time-meta">No hay datos temporales detectados.</div>
+    </div>
+    <div id="hover-tooltip" class="hover-tooltip">
+        <div id="hover-tooltip-title" class="hover-tooltip-title"></div>
+        <div id="hover-tooltip-meta" class="hover-tooltip-meta"></div>
+    </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
-
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-    // System core - untouched
+    const DASH_RESET = [1, 0];
+
     function getQueryParam(name) {
         const params = new URLSearchParams(window.location.search);
         return params.get(name);
@@ -126,10 +242,7 @@
     }
 
     async function loadContent() {
-        if (isLocalSource()) {
-            return getLocalItems();
-        }
-
+        if (isLocalSource()) return getLocalItems();
         const slugDirArc = getQueryParam('slugDirArc');
         let url;
         if (slugDirArc) {
@@ -153,31 +266,6 @@
         document.getElementById('raw-panel').classList.remove('open');
     });
 
-    function highlightFeatureInTextarea(feature) {
-        const panel = document.getElementById('raw-panel');
-        if (!panel.classList.contains('open')) return;
-
-        const textarea = document.getElementById('raw-textarea');
-        const text = textarea.value;
-
-        let searchString = "";
-        if (feature.geometry && feature.geometry.coordinates) {
-            const coordsStr = JSON.stringify(feature.geometry.coordinates);
-            searchString = coordsStr.replace(/[\[\]]/g, '').split(',').slice(0, 3).join(',');
-        }
-
-        if (searchString && searchString.length > 5) {
-            const index = text.indexOf(searchString);
-            if (index !== -1) {
-                textarea.focus();
-                textarea.setSelectionRange(Math.max(0, index - 20), Math.min(text.length, index + 100));
-                const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight) || 16;
-                const linesBefore = text.substring(0, index).split('\n').length;
-                textarea.scrollTop = (linesBefore - 1) * lineHeight - (textarea.clientHeight / 3);
-            }
-        }
-    }
-
     function normalizeLng180(lng) {
         let x = lng;
         while (x > 180) x -= 360;
@@ -185,8 +273,8 @@
         return x;
     }
 
-    function offsetLatLngs(latlngs, offset) {
-        return latlngs.map(([lat, lng]) => [lat, lng + offset]);
+    function cloneFeature(feature) {
+        return JSON.parse(JSON.stringify(feature));
     }
 
     function getFeatureKey(feature) {
@@ -196,16 +284,176 @@
         );
     }
 
+    function parseHexColor(value) {
+        if (typeof value !== 'string') return null;
+        const v = value.trim();
+        return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v) ? v : null;
+    }
+
+    function getFeatureDisplayName(feature, item) {
+        const props = feature.properties || {};
+        return props.name || props.nombre || props.title || item?.nombre || 'Infraestructura';
+    }
+
+    function getFeatureDisplayType(feature) {
+        return (feature && feature.geometry && feature.geometry.type) || 'Vector';
+    }
+
+    function getFeatureTimelineBadge(feature) {
+        const state = getTimelineState((feature && feature.properties) || {}, appState.timelineValue, getFeatureDisplayType(feature));
+        if (state === 'planned') return 'Commissioned';
+        if (state === 'active') return 'Active';
+        if (state === 'decom') return 'Decommissioned';
+        if (state === 'hidden') return 'Hidden';
+        return 'Visible';
+    }
+
+    function featureMatchesSearch(feature, query, item) {
+        if (!query) return true;
+        const props = feature.properties || {};
+        const blob = [
+            getFeatureDisplayName(feature, item),
+            getFeatureDisplayType(feature),
+            props.type || '',
+            props.description || props.descripcion || props.desc || '',
+            props.id || '',
+            props.featureid || ''
+        ].join(' ').toLowerCase();
+        return blob.includes(query.toLowerCase());
+    }
+
+    function getFeatureById(featureId) {
+        return appState.rawFeaturesById.get(String(featureId));
+    }
+
+    function selectFeatureById(featureId, options = {}) {
+        const feature = getFeatureById(featureId);
+        if (!feature) return;
+        appState.selectedFeatureId = String(featureId);
+        if (appState.map) refreshLayerStyles(appState.map);
+        renderFeatureTable();
+        showFeatureInfo(feature, appState.item);
+        if (options.center !== false) fitToOriginalFeature(feature);
+    }
+
+    function setRawPanelTab(mode) {
+        const isText = mode === 'text';
+        document.getElementById('raw-tab-text').classList.toggle('active', isText);
+        document.getElementById('raw-tab-list').classList.toggle('active', !isText);
+        document.getElementById('raw-view-text').classList.toggle('active', isText);
+        document.getElementById('raw-view-list').classList.toggle('active', !isText);
+    }
+
+    function buildFeatureIndex(features, item) {
+        appState.featureIndex = (features || []).map((feature, idx) => {
+            const props = feature.properties || {};
+            return {
+                id: String(props.__featureId || idx),
+                name: getFeatureDisplayName(feature, item),
+                type: getFeatureDisplayType(feature),
+                color: getFeatureBaseColor(feature),
+                feature
+            };
+        });
+    }
+
+    function renderFeatureTable() {
+        const body = document.getElementById('feature-table-body');
+        const empty = document.getElementById('feature-empty');
+        const meta = document.getElementById('feature-list-meta');
+        const q = (document.getElementById('feature-search').value || '').trim();
+        const filtered = appState.featureIndex.filter(entry => featureMatchesSearch(entry.feature, q, appState.item));
+        meta.textContent = `${filtered.length} / ${appState.featureIndex.length} features`;
+        if (!filtered.length) {
+            body.innerHTML = '';
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+        body.innerHTML = filtered.map(entry => {
+            const badge = getFeatureTimelineBadge(entry.feature);
+            const active = String(entry.id) === String(appState.selectedFeatureId);
+            const props = entry.feature.properties || {};
+            const sub = props.type || props.featureid || props.id || '';
+            return `
+                <tr class="feature-row ${active ? 'active' : ''}" data-feature-id="${entry.id}">
+                    <td><span class="feature-name">${entry.name}</span>${sub ? `<span class="feature-sub">${sub}</span>` : ''}</td>
+                    <td><span class="feature-badge"><span class="feature-color-dot" style="background:${entry.color}"></span>${entry.type}</span></td>
+                    <td><span class="feature-badge">${badge}</span></td>
+                </tr>`;
+        }).join('');
+        body.querySelectorAll('.feature-row').forEach(row => {
+            row.addEventListener('click', () => {
+                selectFeatureById(row.dataset.featureId);
+            });
+        });
+    }
+
+    function updateHoverTooltip(feature, point) {
+        const tooltip = document.getElementById('hover-tooltip');
+        if (!feature || !appState.hoverPopupEnabled) {
+            tooltip.classList.remove('visible');
+            return;
+        }
+        const original = getFeatureById(feature.properties && feature.properties.__featureId);
+        if (!original) {
+            tooltip.classList.remove('visible');
+            return;
+        }
+        document.getElementById('hover-tooltip-title').textContent = getFeatureDisplayName(original, appState.item);
+        document.getElementById('hover-tooltip-meta').textContent = `${getFeatureDisplayType(original)} · ${getFeatureTimelineBadge(original)}`;
+        tooltip.style.left = `${point.x}px`;
+        tooltip.style.top = `${point.y}px`;
+        tooltip.classList.add('visible');
+    }
+
+    function hideHoverTooltip() {
+        document.getElementById('hover-tooltip').classList.remove('visible');
+        appState.hoverFeatureId = null;
+    }
+
+    function buildTimelineMarks(minYear, maxYear) {
+        const ticksEl = document.getElementById('time-ticks');
+        const labelsEl = document.getElementById('time-labels');
+        ticksEl.innerHTML = '';
+        labelsEl.innerHTML = '';
+        const span = Math.max(1, maxYear - minYear);
+        const majorCount = Math.min(6, span + 1);
+        const years = [];
+        for (let i = 0; i < majorCount; i += 1) {
+            years.push(Math.round(minYear + (span * i / Math.max(1, majorCount - 1))));
+        }
+        const uniqueYears = [...new Set(years)];
+        const minorCount = Math.min(16, span + 1);
+        for (let i = 0; i < minorCount; i += 1) {
+            const left = (i / Math.max(1, minorCount - 1)) * 100;
+            const tick = document.createElement('div');
+            tick.className = 'time-tick';
+            tick.style.left = `${left}%`;
+            ticksEl.appendChild(tick);
+        }
+        uniqueYears.forEach(year => {
+            const left = ((year - minYear) / span) * 100;
+            const tick = document.createElement('div');
+            tick.className = 'time-tick major';
+            tick.style.left = `${left}%`;
+            ticksEl.appendChild(tick);
+            const label = document.createElement('div');
+            label.className = 'time-label';
+            label.style.left = `${left}%`;
+            label.textContent = String(year);
+            labelsEl.appendChild(label);
+        });
+    }
+
     function buildFeaturePopup(feature, item) {
         const props = feature.properties || {};
         const title = props.name || props.nombre || props.title || item.nombre || 'Infraestructura';
         let descHtml = props.description || props.descripcion || props.desc || item.descripcion || 'Geometría estructural del proyecto.';
-
         if (props.image || props.image_url) {
             const imgUrl = props.image || props.image_url;
             descHtml = `<img src="${imgUrl}" alt="Feature Image"><br>${descHtml}`;
         }
-
         return {
             title,
             descHtml,
@@ -222,695 +470,588 @@
         highlightFeatureInTextarea(feature);
     }
 
-    function getLayerBoundsSafe(layer) {
-        if (!layer) return null;
-        if (typeof layer.getBounds === 'function') {
-            const b = layer.getBounds();
-            if (b && b.isValid && b.isValid()) return b;
+    function highlightFeatureInTextarea(feature) {
+        const panel = document.getElementById('raw-panel');
+        if (!panel.classList.contains('open')) return;
+        const textarea = document.getElementById('raw-textarea');
+        const text = textarea.value;
+        let searchString = '';
+        if (feature.geometry && feature.geometry.coordinates) {
+            const coordsStr = JSON.stringify(feature.geometry.coordinates);
+            searchString = coordsStr.replace(/[\[\]]/g, '').split(',').slice(0, 3).join(',');
         }
-        if (typeof layer.getLatLng === 'function') {
-            const ll = layer.getLatLng();
-            if (ll) return L.latLngBounds(ll, ll);
-        }
-        return null;
-    }
-
-    function cloneBounds(bounds) {
-        return L.latLngBounds(bounds.getSouthWest(), bounds.getNorthEast());
-    }
-
-    function combineBounds(boundsA, boundsB) {
-        if (!boundsA && !boundsB) return null;
-        if (!boundsA) return cloneBounds(boundsB);
-        if (!boundsB) return cloneBounds(boundsA);
-        const combined = cloneBounds(boundsA);
-        combined.extend(boundsB.getSouthWest());
-        combined.extend(boundsB.getNorthEast());
-        return combined;
-    }
-
-    function splitLineAtAntimeridian(coords) {
-        if (!Array.isArray(coords) || coords.length < 2) return [];
-
-        const parts = [];
-        let currentPart = [];
-        let currentWorldOffset = 0;
-        let partIndex = 0;
-        let crosses = false;
-
-        const pushCurrentPart = () => {
-            if (currentPart.length >= 2) {
-                parts.push({
-                    latlngs: currentPart.slice(),
-                    worldOffset: currentWorldOffset,
-                    partIndex: partIndex++
-                });
+        if (searchString && searchString.length > 5) {
+            const index = text.indexOf(searchString);
+            if (index !== -1) {
+                textarea.focus();
+                textarea.setSelectionRange(Math.max(0, index - 20), Math.min(text.length, index + 100));
+                const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight) || 16;
+                const linesBefore = text.substring(0, index).split('\n').length;
+                textarea.scrollTop = (linesBefore - 1) * lineHeight - (textarea.clientHeight / 3);
             }
-        };
+        }
+    }
 
-        let prev = coords[0];
-        currentPart.push([Number(prev[1]), Number(prev[0]) + currentWorldOffset]);
+    function shiftCoords(coords, offset) {
+        return coords.map(c => Array.isArray(c[0]) ? shiftCoords(c, offset) : [c[0] + offset, c[1]]);
+    }
 
-        for (let i = 1; i < coords.length; i++) {
-            const curr = coords[i];
-            const prevLng = Number(prev[0]);
-            const prevLat = Number(prev[1]);
-            const currLng = Number(curr[0]);
-            const currLat = Number(curr[1]);
+    function shiftGeometryByOffset(geometry, offset) {
+        if (!geometry || !offset) return geometry;
+        return { ...geometry, coordinates: shiftCoords(geometry.coordinates, offset) };
+    }
 
-            const delta = currLng - prevLng;
-
-            if (Math.abs(delta) > 180) {
-                crosses = true;
-
-                const crossingEastward = delta > 180;
-                const edgeFrom = crossingEastward ? -180 : 180;
-                const edgeTo = crossingEastward ? 180 : -180;
-
-                const distA = Math.abs(edgeFrom - prevLng);
-                const distB = Math.abs(currLng - edgeTo);
-                const t = (distA + distB) === 0 ? 0.5 : distA / (distA + distB);
-                const crossLat = prevLat + (currLat - prevLat) * t;
-
-                currentPart.push([crossLat, edgeFrom + currentWorldOffset]);
-                pushCurrentPart();
-
-                currentWorldOffset += crossingEastward ? -360 : 360;
-                currentPart = [[crossLat, edgeTo + currentWorldOffset], [currLat, currLng + currentWorldOffset]];
-            } else {
-                currentPart.push([currLat, currLng + currentWorldOffset]);
+    function computeFeatureBounds(feature) {
+        let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+        const visit = coords => {
+            if (!Array.isArray(coords)) return;
+            if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+                minLng = Math.min(minLng, coords[0]);
+                maxLng = Math.max(maxLng, coords[0]);
+                minLat = Math.min(minLat, coords[1]);
+                maxLat = Math.max(maxLat, coords[1]);
+                return;
             }
-
-            prev = curr;
-        }
-
-        pushCurrentPart();
-
-        return {
-            parts,
-            crossesAntimeridian: crosses
+            coords.forEach(visit);
         };
+        visit(feature.geometry && feature.geometry.coordinates);
+        if (!Number.isFinite(minLng)) return null;
+        return [[minLng, minLat], [maxLng, maxLat]];
     }
 
-    function centerPartNearPrimeWorld(part) {
-        const lngs = part.latlngs.map(p => p[1]);
-        const minLng = Math.min(...lngs);
-        const maxLng = Math.max(...lngs);
-        const center = (minLng + maxLng) / 2;
-        const shiftWorlds = Math.round(center / 360);
-        const shift = -shiftWorlds * 360;
-
-        return {
-            ...part,
-            latlngs: offsetLatLngs(part.latlngs, shift),
-            worldOffset: part.worldOffset + shift
-        };
+    function expandBounds(boundsA, boundsB) {
+        if (!boundsA) return boundsB ? [[boundsB[0][0], boundsB[0][1]], [boundsB[1][0], boundsB[1][1]]] : null;
+        if (!boundsB) return boundsA;
+        return [
+            [Math.min(boundsA[0][0], boundsB[0][0]), Math.min(boundsA[0][1], boundsB[0][1])],
+            [Math.max(boundsA[1][0], boundsB[1][0]), Math.max(boundsA[1][1], boundsB[1][1])]
+        ];
     }
 
-    function buildWrappedLineParts(coords) {
-        const split = splitLineAtAntimeridian(coords);
-        return {
-            crossesAntimeridian: split.crossesAntimeridian,
-            parts: split.parts.map(centerPartNearPrimeWorld)
-        };
+    function bboxCenter(bounds) {
+        if (!bounds) return null;
+        return { lng: (bounds[0][0] + bounds[1][0]) / 2, lat: (bounds[0][1] + bounds[1][1]) / 2 };
     }
 
-    function getWorldCopyOffsetsForPart(part) {
-        const offsets = [-720, -360, 0, 360, 720];
-        const lngs = part.latlngs.map(p => p[1]);
-        const minLng = Math.min(...lngs);
-        const maxLng = Math.max(...lngs);
-
-        return offsets.filter(offset => {
-            const shiftedMin = minLng + offset;
-            const shiftedMax = maxLng + offset;
-            return shiftedMax >= -540 && shiftedMin <= 540;
-        });
-    }
-
-    function registerFeatureLayer(state, feature, layer, baseStyle, meta) {
-        const featureId = getFeatureKey(feature);
-
-        if (!state.featureRegistry.has(featureId)) {
-            state.featureRegistry.set(featureId, {
-                feature,
-                layers: [],
-                baseStyle: baseStyle,
-                crossesAntimeridian: false
-            });
-        }
-
-        const entry = state.featureRegistry.get(featureId);
-        entry.layers.push({
-            layer,
-            worldOffset: meta.worldOffset || 0,
-            logicalPartIndex: meta.logicalPartIndex ?? 0,
-            isAntimeridianSplitPart: !!meta.isAntimeridianSplitPart,
-            latlngs: meta.latlngs || null
-        });
-
-        if (meta.isAntimeridianSplitPart) {
-            entry.crossesAntimeridian = true;
-        }
-
-        return entry;
-    }
-
-    function applyStyleToFeatureCopies(featureEntry, style) {
-        if (!featureEntry || !featureEntry.layers) return;
-        featureEntry.layers.forEach(ref => {
-            if (ref.layer && typeof ref.layer.setStyle === 'function') {
-                ref.layer.setStyle(style);
-            }
-        });
-    }
-
-    function resetFeatureCopies(featureEntry) {
-        if (!featureEntry) return;
-        applyStyleToFeatureCopies(featureEntry, featureEntry.baseStyle);
-    }
-
-    function selectFeatureCopies(featureEntry, activeStyle) {
-        applyStyleToFeatureCopies(featureEntry, activeStyle);
-    }
-
-    function buildBoundsFromRefs(refs) {
+    function computeCollectionBounds(geoData) {
+        const features = geoData.type === 'FeatureCollection' ? (geoData.features || []) : (geoData.type === 'Feature' ? [geoData] : []);
         let bounds = null;
-        refs.forEach(ref => {
-            const b = getLayerBoundsSafe(ref.layer);
-            if (!b) return;
-            bounds = combineBounds(bounds, b);
+        features.forEach(feature => {
+            bounds = expandBounds(bounds, computeFeatureBounds(feature));
         });
         return bounds;
     }
 
-    function getFeatureFocusBoundsFromPart(featureEntry, clickedRef) {
-        if (!featureEntry || !clickedRef) return null;
-
-        if (!featureEntry.crossesAntimeridian || !clickedRef.isAntimeridianSplitPart) {
-            return getLayerBoundsSafe(clickedRef.layer);
-        }
-
-        const sameWorldMatchingPart = featureEntry.layers.filter(ref =>
-            ref.worldOffset === clickedRef.worldOffset &&
-            ref.logicalPartIndex === clickedRef.logicalPartIndex &&
-            ref.isAntimeridianSplitPart
-        );
-
-        const pairedPart = featureEntry.layers.find(ref =>
-            ref.worldOffset === clickedRef.worldOffset &&
-            ref.logicalPartIndex !== clickedRef.logicalPartIndex &&
-            ref.isAntimeridianSplitPart
-        );
-
-        let bounds = buildBoundsFromRefs(sameWorldMatchingPart);
-
-        if (pairedPart) {
-            const pairedBounds = getLayerBoundsSafe(pairedPart.layer);
-            bounds = combineBounds(bounds, pairedBounds);
-        }
-
-        return bounds || getLayerBoundsSafe(clickedRef.layer);
+    function normalizeTimelineFeatureProps(props) {
+        const parseYear = val => {
+            if (val == null) return null;
+            if (typeof val === 'number' && Number.isFinite(val)) return val > 1800 && val < 3000 ? Math.round(val) : null;
+            const str = String(val).trim();
+            const match = str.match(/(18|19|20|21)\d{2}/);
+            return match ? Number(match[0]) : null;
+        };
+        const comAt = parseYear(props.com_at);
+        const setAt = parseYear(props.set_at);
+        const decomAt = parseYear(props.decom_at);
+        const removedAt = parseYear(props.removed_at);
+        if (comAt == null && setAt == null) return null;
+        const normalized = { com_at: comAt, set_at: setAt, decom_at: decomAt, removed_at: removedAt };
+        if (normalized.com_at != null && normalized.set_at != null && normalized.com_at > normalized.set_at) normalized.com_at = normalized.set_at;
+        if (normalized.decom_at != null && normalized.removed_at != null && normalized.removed_at < normalized.decom_at) normalized.decom_at = null;
+        return normalized;
     }
 
-    function makeInteractiveLayer(layer, feature, item, map, state, geoStyle, activeStyle, meta) {
-        const featureEntry = registerFeatureLayer(state, feature, layer, geoStyle, meta);
-
-        layer.on('click', function (e) {
-            L.DomEvent.stopPropagation(e);
-
-            if (state.selectedFeatureEntry) {
-                resetFeatureCopies(state.selectedFeatureEntry);
-            }
-
-            selectFeatureCopies(featureEntry, activeStyle);
-            state.selectedFeatureEntry = featureEntry;
-
-            const clickedRef = featureEntry.layers.find(ref => ref.layer === layer);
-            const focusBounds = getFeatureFocusBoundsFromPart(featureEntry, clickedRef);
-
-            if (focusBounds && focusBounds.isValid()) {
-                map.flyToBounds(focusBounds, { padding: [40, 40], duration: 0.6, maxZoom: 17 });
-            } else if (layer.getLatLng) {
-                map.flyTo(layer.getLatLng(), 17, { duration: 0.6 });
-            }
-
-            showFeatureInfo(feature, item);
+    function detectTemporalConfig(features) {
+        const values = [];
+        let count = 0;
+        features.forEach(feature => {
+            feature.properties = feature.properties || {};
+            const timeline = normalizeTimelineFeatureProps(feature.properties);
+            if (!timeline) return;
+            count += 1;
+            feature.properties.__timeline = timeline;
+            ['com_at', 'set_at', 'decom_at', 'removed_at'].forEach(k => {
+                if (timeline[k] != null) values.push(timeline[k]);
+            });
         });
-
-        return layer;
+        if (!count || !values.length) return null;
+        values.sort((a, b) => a - b);
+        return { min: values[0], max: values[values.length - 1], count };
     }
 
-    function buildLineLayers(feature, style, activeStyle, item, map, state, boundsCollector) {
-        const geom = feature.geometry;
-        const lines = geom.type === 'LineString' ? [geom.coordinates] : geom.coordinates;
-        const group = L.featureGroup();
+    function getTimelineState(props, year, geometryType) {
+        const t = props && props.__timeline;
+        if (!t || year == null) return 'default';
+        const comAt = t.com_at;
+        const setAt = t.set_at;
+        const decomAt = t.decom_at;
+        const removedAt = t.removed_at;
+        if (removedAt != null && year >= removedAt) return 'hidden';
+        if (geometryType === 'Point' || geometryType === 'MultiPoint') {
+            if (setAt != null && year >= setAt) return 'active';
+            return 'hidden';
+        }
+        if (decomAt != null && year >= decomAt) return 'decom';
+        if (setAt != null && year >= setAt) return 'active';
+        if (comAt != null && year >= comAt) return 'planned';
+        return 'hidden';
+    }
 
-        lines.forEach(lineCoords => {
-            const wrapped = buildWrappedLineParts(lineCoords);
-            if (!wrapped.parts.length) return;
+    function buildRepeatedFeatureCollection(geoData) {
+        const features = geoData.type === 'FeatureCollection' ? (geoData.features || []) : (geoData.type === 'Feature' ? [geoData] : []);
+        const offsets = [-360, 0, 360];
+        const expanded = [];
+        features.forEach((feature, featureIndex) => {
+            const baseId = feature.properties && feature.properties.__featureId ? feature.properties.__featureId : String(getFeatureKey(feature) || `feature-${featureIndex}`);
+            offsets.forEach(offset => {
+                const copy = cloneFeature(feature);
+                copy.properties = copy.properties || {};
+                copy.properties.__featureId = String(baseId);
+                copy.properties.__worldOffset = offset;
+                copy.properties.__copyKey = `${baseId}__${offset}`;
+                if (offset !== 0) copy.geometry = shiftGeometryByOffset(copy.geometry, offset);
+                expanded.push(copy);
+            });
+        });
+        return { type: 'FeatureCollection', features: expanded };
+    }
 
-            wrapped.parts.forEach(part => {
-                const copyOffsets = getWorldCopyOffsetsForPart(part);
-                const baseOffset = copyOffsets.includes(0) ? 0 : (copyOffsets[0] || 0);
+    function buildBaseStyle(tileUrl, attribution) {
+        return {
+            version: 8,
+            sources: { basemap: { type: 'raster', tiles: [tileUrl], tileSize: 256, attribution } },
+            layers: [{ id: 'basemap', type: 'raster', source: 'basemap' }]
+        };
+    }
 
-                copyOffsets.forEach(copyOffset => {
-                    const shiftedLatLngs = offsetLatLngs(part.latlngs, copyOffset);
-                    const effectiveWorldOffset = part.worldOffset + copyOffset;
+    function setNeedleFromBearing(map) {
+        const needle = document.getElementById('compass-needle');
+        const bearing = typeof map.getBearing === 'function' ? map.getBearing() : 0;
+        needle.style.transform = `rotate(${-bearing}deg)`;
+    }
 
-                    const layer = makeInteractiveLayer(
-                        L.polyline(shiftedLatLngs, style),
-                        feature,
-                        item,
-                        map,
-                        state,
-                        style,
-                        activeStyle,
-                        {
-                            worldOffset: effectiveWorldOffset,
-                            logicalPartIndex: part.partIndex,
-                            isAntimeridianSplitPart: wrapped.crossesAntimeridian,
-                            latlngs: shiftedLatLngs
-                        }
-                    );
+    function setOsmButtonHref(bounds, map) {
+        if (!bounds) return;
+        const center = bboxCenter(bounds);
+        if (!center) return;
+        const safeLng = normalizeLng180(center.lng);
+        const zoom = Math.min(17, Math.max(1, Math.round(map.getZoom())));
+        const osmBtn = document.getElementById('btn-osm');
+        osmBtn.href = `https://www.openstreetmap.org/?mlat=${center.lat}&mlon=${safeLng}#map=${zoom}/${center.lat}/${safeLng}`;
+        osmBtn.style.display = 'flex';
+    }
 
-                    group.addLayer(layer);
+    const appState = {
+        map: null,
+        item: null,
+        rawGeoData: null,
+        expandedGeoData: null,
+        datasetBounds: null,
+        rawFeaturesById: new Map(),
+        selectedFeatureId: null,
+        temporalConfig: null,
+        timelineValue: null,
+        currentProjection: 'mercator',
+        visibleCopyKeys: new Set(),
+        featureIndex: [],
+        hoverFeatureId: null,
+        hoverPopupEnabled: window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    };
 
-                    if (copyOffset === baseOffset) {
-                        boundsCollector.addLayer(L.polyline(shiftedLatLngs, style));
-                    }
+    function getFeatureBaseColor(feature) {
+        const props = feature.properties || {};
+        return parseHexColor(props.color) || '#00a8ff';
+    }
+
+    function featureStyleSnapshot(feature, year) {
+        const geometryType = feature.geometry && feature.geometry.type;
+        const state = getTimelineState(feature.properties || {}, year, geometryType);
+        const baseColor = getFeatureBaseColor(feature);
+        if (state === 'planned') return { visible: true, lineColor: baseColor, fillColor: baseColor, lineOpacity: 0.9, fillOpacity: 0.06, circleOpacity: 0, lineWidth: 3, circleRadius: 0 };
+        if (state === 'active') return { visible: true, lineColor: baseColor, fillColor: baseColor, lineOpacity: 0.95, fillOpacity: 0.16, circleOpacity: 0.95, lineWidth: 3, circleRadius: 5.5 };
+        if (state === 'decom') return { visible: true, lineColor: '#8a9099', fillColor: '#8a9099', lineOpacity: 0.58, fillOpacity: 0.08, circleOpacity: 0.58, lineWidth: 3, circleRadius: 5.1 };
+        if (appState.temporalConfig) return { visible: false, lineColor: baseColor, fillColor: baseColor, lineOpacity: 0, fillOpacity: 0, circleOpacity: 0, lineWidth: 3, circleRadius: 0 };
+        return { visible: true, lineColor: baseColor, fillColor: baseColor, lineOpacity: 0.95, fillOpacity: 0.16, circleOpacity: 0.95, lineWidth: 3, circleRadius: 5.5 };
+    }
+
+    function selectedFadeFactor(featureId) {
+        if (!appState.selectedFeatureId) return 1;
+        return String(featureId) === String(appState.selectedFeatureId) ? 1 : 0.22;
+    }
+
+    function recomputeVisibleCopyKeys() {
+        const visible = new Set();
+        const features = (appState.expandedGeoData && appState.expandedGeoData.features) || [];
+        features.forEach(feature => {
+            const style = featureStyleSnapshot(feature, appState.timelineValue);
+            if (style.visible && feature.properties && feature.properties.__copyKey) visible.add(String(feature.properties.__copyKey));
+        });
+        appState.visibleCopyKeys = visible;
+    }
+
+    function expressionForGeometry(geomType, propKey, fallback) {
+        const features = (appState.expandedGeoData && appState.expandedGeoData.features) || [];
+        const entries = [];
+        features.forEach(feature => {
+            const type = feature.geometry && feature.geometry.type;
+            const isLine = geomType === 'line' && ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(type);
+            const isFill = geomType === 'fill' && ['Polygon', 'MultiPolygon'].includes(type);
+            const isCircle = geomType === 'circle' && ['Point', 'MultiPoint'].includes(type);
+            const isOutline = geomType === 'outline' && ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(type);
+            const isPointOutline = geomType === 'point-outline' && ['Point', 'MultiPoint'].includes(type);
+            if (!isLine && !isFill && !isCircle && !isOutline && !isPointOutline) return;
+            const style = featureStyleSnapshot(feature, appState.timelineValue);
+            const featureId = feature.properties.__featureId;
+            const selected = appState.selectedFeatureId && String(featureId) === String(appState.selectedFeatureId);
+            const fade = selectedFadeFactor(featureId);
+            const copyKey = feature.properties.__copyKey;
+            let value = fallback;
+            if (propKey === 'lineColor') value = style.lineColor;
+            if (propKey === 'fillColor') value = style.fillColor;
+            if (propKey === 'lineOpacity') value = style.lineOpacity * fade;
+            if (propKey === 'fillOpacity') value = style.fillOpacity * fade;
+            if (propKey === 'circleOpacity') value = style.circleOpacity * fade;
+            if (propKey === 'lineWidth') value = style.lineWidth;
+            if (propKey === 'circleRadius') value = style.circleRadius;
+            if (propKey === 'outlineOpacity') value = selected && style.visible ? 1 : 0;
+            if (propKey === 'outlineWidth') value = selected && style.visible ? (['LineString', 'MultiLineString'].includes(type) ? style.lineWidth + 4 : style.lineWidth + 3) : 0;
+            if (propKey === 'pointOutlineRadius') value = selected && style.visible ? style.circleRadius + 4 : 0;
+            entries.push(copyKey, value);
+        });
+        return ['match', ['get', '__copyKey'], ...entries, fallback];
+    }
+
+    function buildCopyKeyFilter(types, stateNames) {
+        const features = (appState.expandedGeoData && appState.expandedGeoData.features) || [];
+        const copyKeys = [];
+        features.forEach(feature => {
+            const type = feature.geometry && feature.geometry.type;
+            if (!types.includes(type)) return;
+            const state = getTimelineState(feature.properties || {}, appState.timelineValue, type);
+            if (stateNames.includes(state) && feature.properties && feature.properties.__copyKey) copyKeys.push(String(feature.properties.__copyKey));
+        });
+        if (!copyKeys.length) return ['==', ['get', '__copyKey'], '__none__'];
+        return ['in', ['get', '__copyKey'], ['literal', copyKeys]];
+    }
+
+    function ensureSourceAndLayers(map) {
+        if (!map.getSource('geojson-main')) {
+            map.addSource('geojson-main', { type: 'geojson', data: appState.expandedGeoData || { type: 'FeatureCollection', features: [] } });
+        }
+        if (!map.getLayer('geojson-fill')) {
+            map.addLayer({ id: 'geojson-fill', type: 'fill', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]], paint: { 'fill-color': '#00a8ff', 'fill-opacity': 0.16 } });
+        }
+        if (!map.getLayer('geojson-line-outline')) {
+            map.addLayer({ id: 'geojson-line-outline', type: 'line', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']]], paint: { 'line-color': '#ffffff', 'line-width': 0, 'line-opacity': 0 } });
+        }
+        if (!map.getLayer('geojson-line-solid')) {
+            map.addLayer({ id: 'geojson-line-solid', type: 'line', source: 'geojson-main', filter: ['==', ['get', '__copyKey'], '__none__'], paint: { 'line-color': '#00a8ff', 'line-width': 3, 'line-opacity': 0.95, 'line-dasharray': DASH_RESET } });
+        }
+        if (!map.getLayer('geojson-line-dashed')) {
+            map.addLayer({ id: 'geojson-line-dashed', type: 'line', source: 'geojson-main', filter: ['==', ['get', '__copyKey'], '__none__'], paint: { 'line-color': '#00a8ff', 'line-width': 3, 'line-opacity': 0.95, 'line-dasharray': [2, 2] } });
+        }
+        if (!map.getLayer('geojson-point-outline')) {
+            map.addLayer({ id: 'geojson-point-outline', type: 'circle', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]], paint: { 'circle-color': '#ffffff', 'circle-radius': 0, 'circle-opacity': 0 } });
+        }
+        if (!map.getLayer('geojson-circle')) {
+            map.addLayer({ id: 'geojson-circle', type: 'circle', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]], paint: { 'circle-color': '#00a8ff', 'circle-radius': 5.5, 'circle-opacity': 0.95, 'circle-stroke-width': 1.2, 'circle-stroke-color': '#081014' } });
+        }
+    }
+
+    function refreshLayerStyles(map) {
+        recomputeVisibleCopyKeys();
+        if (map.getLayer('geojson-fill')) {
+            map.setPaintProperty('geojson-fill', 'fill-color', expressionForGeometry('fill', 'fillColor', '#00a8ff'));
+            map.setPaintProperty('geojson-fill', 'fill-opacity', expressionForGeometry('fill', 'fillOpacity', 0.16));
+        }
+        if (map.getLayer('geojson-line-outline')) {
+            map.setPaintProperty('geojson-line-outline', 'line-width', expressionForGeometry('outline', 'outlineWidth', 0));
+            map.setPaintProperty('geojson-line-outline', 'line-opacity', expressionForGeometry('outline', 'outlineOpacity', 0));
+        }
+        if (map.getLayer('geojson-line-solid')) {
+            map.setFilter('geojson-line-solid', buildCopyKeyFilter(['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], ['active', 'decom', 'default']));
+            map.setPaintProperty('geojson-line-solid', 'line-color', expressionForGeometry('line', 'lineColor', '#00a8ff'));
+            map.setPaintProperty('geojson-line-solid', 'line-width', expressionForGeometry('line', 'lineWidth', 3));
+            map.setPaintProperty('geojson-line-solid', 'line-opacity', expressionForGeometry('line', 'lineOpacity', 0.95));
+            map.setPaintProperty('geojson-line-solid', 'line-dasharray', DASH_RESET);
+        }
+        if (map.getLayer('geojson-line-dashed')) {
+            map.setFilter('geojson-line-dashed', buildCopyKeyFilter(['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], ['planned']));
+            map.setPaintProperty('geojson-line-dashed', 'line-color', expressionForGeometry('line', 'lineColor', '#00a8ff'));
+            map.setPaintProperty('geojson-line-dashed', 'line-width', expressionForGeometry('line', 'lineWidth', 3));
+            map.setPaintProperty('geojson-line-dashed', 'line-opacity', expressionForGeometry('line', 'lineOpacity', 0.95));
+        }
+        if (map.getLayer('geojson-point-outline')) {
+            map.setPaintProperty('geojson-point-outline', 'circle-radius', expressionForGeometry('point-outline', 'pointOutlineRadius', 0));
+            map.setPaintProperty('geojson-point-outline', 'circle-opacity', expressionForGeometry('point-outline', 'outlineOpacity', 0));
+        }
+        if (map.getLayer('geojson-circle')) {
+            map.setPaintProperty('geojson-circle', 'circle-color', expressionForGeometry('circle', 'fillColor', '#00a8ff'));
+            map.setPaintProperty('geojson-circle', 'circle-radius', expressionForGeometry('circle', 'circleRadius', 5.5));
+            map.setPaintProperty('geojson-circle', 'circle-opacity', expressionForGeometry('circle', 'circleOpacity', 0.95));
+        }
+        renderFeatureTable();
+    }
+
+    function rehydrateOperationalLayers(map) {
+        ensureSourceAndLayers(map);
+        if (map.getSource('geojson-main') && appState.expandedGeoData) map.getSource('geojson-main').setData(appState.expandedGeoData);
+        refreshLayerStyles(map);
+    }
+
+    function normalizeFeatureBoundsForView(feature, mapCenterLng) {
+        const baseBounds = computeFeatureBounds(feature);
+        if (!baseBounds) return null;
+        const width = baseBounds[1][0] - baseBounds[0][0];
+        if (width <= 180) return baseBounds;
+        const shifts = [-720, -360, 0, 360, 720];
+        let best = null;
+        shifts.forEach(offset => {
+            const shiftedFeature = cloneFeature(feature);
+            shiftedFeature.geometry = shiftGeometryByOffset(shiftedFeature.geometry, offset);
+            const shiftedBounds = computeFeatureBounds(shiftedFeature);
+            if (!shiftedBounds) return;
+            const center = bboxCenter(shiftedBounds);
+            const dist = Math.abs(center.lng - mapCenterLng);
+            if (!best || dist < best.dist) best = { bounds: shiftedBounds, dist };
+        });
+        return best ? best.bounds : baseBounds;
+    }
+
+    function fitToOriginalFeature(feature) {
+        if (!appState.map || !feature) return;
+        const center = appState.map.getCenter();
+        const bounds = normalizeFeatureBoundsForView(feature, center.lng);
+        if (bounds) appState.map.fitBounds(bounds, { padding: 40, maxZoom: 16, duration: 600 });
+    }
+
+    function bindStyleSwitcher(map) {
+        const styles = {
+            dark: buildBaseStyle('https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', '&copy; CARTO &copy; OpenStreetMap contributors'),
+            light: buildBaseStyle('https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', '&copy; CARTO &copy; OpenStreetMap contributors'),
+            osm: buildBaseStyle('https://tile.openstreetmap.org/{z}/{x}/{y}.png', '&copy; OpenStreetMap contributors')
+        };
+        const buttons = {
+            dark: document.getElementById('btn-style-dark'),
+            light: document.getElementById('btn-style-light'),
+            osm: document.getElementById('btn-style-osm')
+        };
+        const setActive = key => Object.entries(buttons).forEach(([k, btn]) => btn.classList.toggle('active', k === key));
+        Object.entries(buttons).forEach(([key, btn]) => {
+            btn.addEventListener('click', () => {
+                const projection = appState.currentProjection;
+                map.setStyle(styles[key]);
+                setActive(key);
+                map.once('styledata', () => {
+                    if (projection === 'globe' && map.setProjection) { try { map.setProjection({ type: 'globe' }); } catch (_) {} }
+                    rehydrateOperationalLayers(map);
                 });
             });
         });
-
-        return group;
+        setActive('dark');
     }
 
-    function buildPolygonLayers(feature, style, activeStyle, item, map, state, boundsCollector) {
-        const geom = feature.geometry;
-        const polygons = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
-        const group = L.featureGroup();
-
-        polygons.forEach(poly => {
-            const rings = poly.map(ring => ring.map(coord => [coord[1], coord[0]])).filter(r => r.length);
-            if (!rings.length) return;
-
-            const baseLayer = makeInteractiveLayer(
-                L.polygon(rings, style),
-                feature,
-                item,
-                map,
-                state,
-                style,
-                activeStyle,
-                {
-                    worldOffset: 0,
-                    logicalPartIndex: 0,
-                    isAntimeridianSplitPart: false,
-                    latlngs: rings[0]
-                }
-            );
-
-            group.addLayer(baseLayer);
-            boundsCollector.addLayer(L.polygon(rings, style));
+    function setupTimeline(features) {
+        appState.temporalConfig = detectTemporalConfig(features);
+        const panel = document.getElementById('time-panel');
+        const slider = document.getElementById('time-slider');
+        const valueEl = document.getElementById('time-value');
+        const metaEl = document.getElementById('time-meta');
+        ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(evt => {
+            panel.addEventListener(evt, e => e.stopPropagation());
+            slider.addEventListener(evt, e => e.stopPropagation());
         });
-
-        return group;
+        if (!appState.temporalConfig) {
+            panel.classList.remove('visible');
+            appState.timelineValue = null;
+            return;
+        }
+        appState.timelineValue = appState.temporalConfig.min;
+        slider.min = String(appState.temporalConfig.min);
+        slider.max = String(appState.temporalConfig.max);
+        slider.value = String(appState.temporalConfig.min);
+        valueEl.textContent = String(appState.temporalConfig.min);
+        metaEl.textContent = `${appState.temporalConfig.count} feature(s) · escala ${appState.temporalConfig.min}–${appState.temporalConfig.max}`;
+        buildTimelineMarks(appState.temporalConfig.min, appState.temporalConfig.max);
+        panel.classList.add('visible');
+        slider.oninput = () => {
+            appState.timelineValue = Number(slider.value);
+            valueEl.textContent = String(appState.timelineValue);
+            if (appState.map) refreshLayerStyles(appState.map);
+            renderFeatureTable();
+        };
     }
 
-    function buildPointLayer(feature, style, activeStyle, item, map, state, boundsCollector) {
-        const geom = feature.geometry;
+    let interactionsBound = false;
+    function bindMapInteractions(map) {
+        if (interactionsBound) return;
+        interactionsBound = true;
 
-        if (geom.type === 'Point') {
-            const layer = L.circleMarker([geom.coordinates[1], geom.coordinates[0]], {
-                color: style.color,
-                weight: 2,
-                opacity: 1,
-                fillColor: style.fillColor,
-                fillOpacity: 0.9,
-                radius: 6
-            });
-
-            boundsCollector.addLayer(L.circleMarker([geom.coordinates[1], geom.coordinates[0]], { radius: 1 }));
-
-            return makeInteractiveLayer(
-                layer,
-                feature,
-                item,
-                map,
-                state,
-                { color: style.color, weight: 2, opacity: 1, fillColor: style.fillColor, fillOpacity: 0.9, radius: 6 },
-                { color: activeStyle.color, weight: 2, opacity: 1, fillColor: activeStyle.fillColor, fillOpacity: 0.9, radius: 6 },
-                {
-                    worldOffset: 0,
-                    logicalPartIndex: 0,
-                    isAntimeridianSplitPart: false,
-                    latlngs: [[geom.coordinates[1], geom.coordinates[0]]]
-                }
-            );
+        function getInteractiveFeatures(point) {
+            const bbox = [[point.x - 6, point.y - 6], [point.x + 6, point.y + 6]];
+            const features = map.queryRenderedFeatures(bbox, { layers: ['geojson-fill', 'geojson-line-solid', 'geojson-line-dashed', 'geojson-circle'] });
+            return features.filter(f => f.properties && appState.visibleCopyKeys.has(String(f.properties.__copyKey)));
         }
 
-        if (geom.type === 'MultiPoint') {
-            const group = L.featureGroup();
-
-            geom.coordinates.forEach(c => {
-                const layer = L.circleMarker([c[1], c[0]], {
-                    color: style.color,
-                    weight: 2,
-                    opacity: 1,
-                    fillColor: style.fillColor,
-                    fillOpacity: 0.9,
-                    radius: 6
-                });
-
-                group.addLayer(makeInteractiveLayer(
-                    layer,
-                    feature,
-                    item,
-                    map,
-                    state,
-                    { color: style.color, weight: 2, opacity: 1, fillColor: style.fillColor, fillOpacity: 0.9, radius: 6 },
-                    { color: activeStyle.color, weight: 2, opacity: 1, fillColor: activeStyle.fillColor, fillOpacity: 0.9, radius: 6 },
-                    {
-                        worldOffset: 0,
-                        logicalPartIndex: 0,
-                        isAntimeridianSplitPart: false,
-                        latlngs: [[c[1], c[0]]]
-                    }
-                ));
-
-                boundsCollector.addLayer(L.circleMarker([c[1], c[0]], { radius: 1 }));
-            });
-
-            return group;
-        }
-
-        return null;
-    }
-
-    function buildFeatureLayer(feature, style, activeStyle, item, map, state, boundsCollector) {
-        if (!feature || !feature.geometry) return null;
-        const type = feature.geometry.type;
-
-        if (type === 'LineString' || type === 'MultiLineString') {
-            return buildLineLayers(feature, style, activeStyle, item, map, state, boundsCollector);
-        }
-
-        if (type === 'Polygon' || type === 'MultiPolygon') {
-            return buildPolygonLayers(feature, style, activeStyle, item, map, state, boundsCollector);
-        }
-
-        if (type === 'Point' || type === 'MultiPoint') {
-            return buildPointLayer(feature, style, activeStyle, item, map, state, boundsCollector);
-        }
-
-        try {
-            const layer = L.geoJSON(feature, { style });
-            boundsCollector.addLayer(layer);
-            return layer;
-        } catch (err) {
-            console.warn('Feature no soportado:', feature, err);
-            return null;
-        }
-    }
-
-    function redrawVectorRoot(vectorRoot) {
-        if (!vectorRoot) return;
-        vectorRoot.eachLayer(layer => {
-            if (typeof layer.redraw === 'function') layer.redraw();
-            if (layer.eachLayer) {
-                layer.eachLayer(inner => {
-                    if (typeof inner.redraw === 'function') inner.redraw();
-                });
+        map.on('mousemove', (e) => {
+            const visibleFeatures = getInteractiveFeatures(e.point);
+            const canvas = map.getCanvas();
+            if (!visibleFeatures.length) {
+                canvas.style.cursor = '';
+                hideHoverTooltip();
+                return;
             }
-        });
-    }
-
-    function stabilizeInitialView(map, vectorRoot) {
-        map.invalidateSize({ pan: false });
-        redrawVectorRoot(vectorRoot);
-
-        requestAnimationFrame(() => {
-            map.invalidateSize({ pan: false });
-            redrawVectorRoot(vectorRoot);
-            map.panBy([0, 0], { animate: false });
+            const picked = visibleFeatures[0];
+            canvas.style.cursor = 'pointer';
+            updateHoverTooltip(picked, e.point);
         });
 
-        setTimeout(() => {
-            map.invalidateSize({ pan: false });
-            redrawVectorRoot(vectorRoot);
-            map.panBy([0, 0], { animate: false });
-        }, 120);
+        map.on('mouseleave', () => {
+            map.getCanvas().style.cursor = '';
+            hideHoverTooltip();
+        });
 
-        setTimeout(() => {
-            map.invalidateSize({ pan: false });
-            redrawVectorRoot(vectorRoot);
-            map.panBy([0, 0], { animate: false });
-        }, 300);
-    }
+        map.on('dragstart', hideHoverTooltip);
+        map.on('zoomstart', hideHoverTooltip);
+        map.on('rotatestart', hideHoverTooltip);
+        map.on('pitchstart', hideHoverTooltip);
 
-    function getWorldPixelWidthAtZoom(zoom) {
-        return 256 * Math.pow(2, zoom);
-    }
-
-    function computeThreeWorldMinZoom(map) {
-        const mapWidth = map.getSize().x || window.innerWidth || 1024;
-        const maxZoom = typeof map.getMaxZoom === 'function' && Number.isFinite(map.getMaxZoom()) ? map.getMaxZoom() : 22;
-
-        for (let z = maxZoom; z >= -6; z--) {
-            const worldWidth = getWorldPixelWidthAtZoom(z);
-            const threeWorldsWidth = worldWidth * 3;
-            if (threeWorldsWidth <= mapWidth) {
-                return z + 1;
+        map.on('click', (e) => {
+            const visibleFeatures = getInteractiveFeatures(e.point);
+            if (!visibleFeatures.length) {
+                appState.selectedFeatureId = null;
+                refreshLayerStyles(map);
+                document.getElementById('info-capsule').classList.remove('visible');
+                return;
             }
-        }
-
-        return 0;
-    }
-
-    function applyThreeWorldZoomLimit(map) {
-        const minZoom = computeThreeWorldMinZoom(map);
-        map.setMinZoom(minZoom);
-
-        if (map.getZoom() < minZoom) {
-            map.setZoom(minZoom, { animate: false });
-        }
-    }
-
-    function applyThreeWorldPanLimit(map) {
-        const latLimit = 85;
-        const lngLimit = 540;
-        const bounds = L.latLngBounds(
-            L.latLng(-latLimit, -lngLimit),
-            L.latLng(latLimit, lngLimit)
-        );
-        map.setMaxBounds(bounds);
+            const picked = visibleFeatures[0];
+            const featureId = picked.properties && picked.properties.__featureId;
+            if (!featureId) return;
+            selectFeatureById(featureId);
+        });
+        map.on('rotate', () => setNeedleFromBearing(map));
+        map.on('pitch', () => setNeedleFromBearing(map));
     }
 
     async function initMap() {
         const data = await loadContent();
         const item = data.find(m => m.id === itemId);
         if (!item) return;
-
+        appState.item = item;
         document.getElementById('map-title').textContent = item.nombre || item.id;
         setupCollectionSideNav(data, item);
-
-        const dark  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', noWrap: false });
-        const light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', noWrap: false });
-        const osm   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', noWrap: false });
-
-        const map = L.map('map', {
-            center: [item.lat || -33.04, item.lon || -71.61],
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: buildBaseStyle('https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', '&copy; CARTO &copy; OpenStreetMap contributors'),
+            center: [item.lon || -71.61, item.lat || -33.04],
             zoom: item.zoom || 13,
-            minZoom: 0,
-            layers: [dark],
-            rotate: true,
-            touchRotate: true,
-            rotateControl: false,
-            zoomAnimation: true,
-            fadeAnimation: true,
-            markerZoomAnimation: true,
-            updateWhenZooming: false,
-            preferCanvas: false,
-            worldCopyJump: false,
-            touchZoom: 'center',
-            bounceAtZoomLimits: false,
-            maxBoundsViscosity: 1.0
+            attributionControl: true,
+            hash: false,
+            antialias: true,
+            renderWorldCopies: true,
+            maxPitch: 70,
+            dragRotate: true,
+            touchPitch: true
         });
-
-        applyThreeWorldPanLimit(map);
-
-        L.control.layers({ "Oscuro": dark, "Claro": light, "Color": osm }, null, { position: 'topleft' }).addTo(map);
-        L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
-
-        const needle = document.getElementById('compass-needle');
-        map.on('rotate', () => {
-            if (typeof map.getBearing === 'function') {
-                needle.style.transform = `rotate(${-map.getBearing()}deg)`;
+        appState.map = map;
+        map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: false }), 'bottom-left');
+        bindStyleSwitcher(map);
+        document.getElementById('btn-reset-view').addEventListener('click', () => {
+            if (appState.datasetBounds) map.fitBounds(appState.datasetBounds, { padding: 24, maxZoom: 16, duration: 600 });
+        });
+        document.getElementById('btn-projection').addEventListener('click', () => {
+            if (!map.setProjection) return;
+            appState.currentProjection = appState.currentProjection === 'mercator' ? 'globe' : 'mercator';
+            try {
+                map.setProjection({ type: appState.currentProjection });
+                document.getElementById('btn-projection').classList.toggle('active', appState.currentProjection === 'globe');
+            } catch (err) {
+                console.warn('No se pudo cambiar la proyección:', err);
             }
         });
-
-        const geoStyle = {
-            color: "#00f2ff",
-            weight: 3,
-            opacity: 0.9,
-            fillColor: "#00f2ff",
-            fillOpacity: 0.16
-        };
-
-        const activeStyle = {
-            color: "#ff4d4d",
-            weight: 4,
-            opacity: 1,
-            fillColor: "#ff4d4d",
-            fillOpacity: 0.30
-        };
-
-        const state = {
-            selectedFeatureEntry: null,
-            featureRegistry: new Map()
-        };
-
-        map.on('click', () => {
-            document.getElementById('info-capsule').classList.remove('visible');
-            if (state.selectedFeatureEntry) {
-                resetFeatureCopies(state.selectedFeatureEntry);
-            }
-            state.selectedFeatureEntry = null;
-        });
-
-        let vectorRoot = null;
-        let boundsRoot = null;
-
-        if (item.resolved_url || item.archivo) {
+        map.on('load', async () => {
+            if (!(item.resolved_url || item.archivo)) return;
             const path = item.resolved_url || item.archivo;
-
-            fetch(path)
-                .then(r => r.json())
-                .then(geoData => {
-                    document.getElementById('raw-textarea').value = JSON.stringify(geoData, null, 2);
-
-                    vectorRoot = L.featureGroup().addTo(map);
-                    boundsRoot = L.featureGroup();
-
-                    const features = geoData.type === 'FeatureCollection'
-                        ? (geoData.features || [])
-                        : (geoData.type === 'Feature' ? [geoData] : []);
-
-                    features.forEach(feature => {
-                        const layer = buildFeatureLayer(feature, geoStyle, activeStyle, item, map, state, boundsRoot);
-                        if (layer) vectorRoot.addLayer(layer);
-                    });
-
-                    const bounds = boundsRoot.getBounds();
-                    if (bounds.isValid()) {
-                        map.fitBounds(bounds, {
-                            padding: [20, 20],
-                            maxZoom: 16,
-                            animate: false
-                        });
-
-                        const center = bounds.getCenter();
-                        map.setView([center.lat, normalizeLng180(center.lng)], map.getZoom(), { animate: false });
-
-                        const osmBtn = document.getElementById('btn-osm');
-                        const safeLng = normalizeLng180(center.lng);
-                        osmBtn.href = `https://www.openstreetmap.org/?mlat=${center.lat}&mlon=${safeLng}#map=${Math.min(17, map.getZoom())}/${center.lat}/${safeLng}`;
-                        osmBtn.style.display = 'flex';
-                    }
-
-                    stabilizeInitialView(map, vectorRoot);
-                    applyThreeWorldZoomLimit(map);
-                    applyThreeWorldPanLimit(map);
-
-                    map.on('resize', () => {
-                        applyThreeWorldZoomLimit(map);
-                        applyThreeWorldPanLimit(map);
-                    });
-
-                    map.on('zoomend moveend resize viewreset', () => {
-                        redrawVectorRoot(vectorRoot);
-                    });
-                })
-                .catch(err => {
-                    console.error('Error leyendo GeoJSON', err);
-                    document.getElementById('raw-textarea').value = "Error leyendo o parseando el archivo JSON/GeoJSON.";
+            try {
+                const res = await fetch(path);
+                const geoData = await res.json();
+                appState.rawGeoData = geoData.type === 'FeatureCollection' ? geoData : { type: 'FeatureCollection', features: geoData.type === 'Feature' ? [geoData] : [] };
+                document.getElementById('raw-textarea').value = JSON.stringify(geoData, null, 2);
+                const features = appState.rawGeoData.features || [];
+                appState.rawFeaturesById = new Map();
+                features.forEach((feature, idx) => {
+                    feature.properties = feature.properties || {};
+                    const featureId = String(getFeatureKey(feature) || `feature-${idx}`);
+                    feature.properties.__featureId = featureId;
+                    appState.rawFeaturesById.set(featureId, feature);
                 });
-        }
+                buildFeatureIndex(features, item);
+                renderFeatureTable();
+                setupTimeline(features);
+                appState.expandedGeoData = buildRepeatedFeatureCollection(appState.rawGeoData);
+                appState.datasetBounds = computeCollectionBounds(appState.rawGeoData);
+                ensureSourceAndLayers(map);
+                map.getSource('geojson-main').setData(appState.expandedGeoData);
+                refreshLayerStyles(map);
+                bindMapInteractions(map);
+                if (appState.datasetBounds) {
+                    map.fitBounds(appState.datasetBounds, { padding: 24, maxZoom: 16, duration: 0 });
+                    setOsmButtonHref(appState.datasetBounds, map);
+                }
+                setNeedleFromBearing(map);
+            } catch (err) {
+                console.error('Error leyendo GeoJSON', err);
+                document.getElementById('raw-textarea').value = 'Error leyendo o parseando el archivo JSON/GeoJSON.';
+            }
+        });
     }
 
-    // System core - untouched
     function setupCollectionSideNav(allData, currentItem) {
         const collName = currentItem.coleccion || currentItem.collection;
         if (!collName) return;
-
         const siblings = allData.filter(i => i.coleccion === collName || i.collection === collName);
         if (siblings.length <= 1) return;
-
         const container = document.getElementById('collection-nav');
         container.style.display = 'flex';
-
         const itemList = document.getElementById('collItemList');
-
         const slugDirArc = getQueryParam('slugDirArc');
         const source = getQueryParam('source');
         const extraSlug = slugDirArc ? `&slugDirArc=${encodeURIComponent(slugDirArc)}` : '';
         const extraSource = source ? `&source=${encodeURIComponent(source)}` : '';
         const extra = `${extraSlug}${extraSource}`;
-
         itemList.innerHTML = siblings.map(i => {
             const visorType = i.visor || 'media';
             const url = `viewer-${visorType}.html?id=${encodeURIComponent(i.id)}${extra}`;
-            return `
-                <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">
-                    ${i.nombre || i.id}
-                </a>`;
+            return `\n                <a href="${url}" class="coll-item ${i.id === currentItem.id ? 'active' : ''}">\n                    ${i.nombre || i.id}\n                </a>`;
         }).join('');
-
         document.getElementById('collTab').onclick = (e) => {
             e.stopPropagation();
             container.classList.toggle('open');
         };
-
         document.addEventListener('pointerdown', e => {
-            if (!container.contains(e.target) && !e.target.closest('.leaflet-control')) {
-                container.classList.remove('open');
-            }
+            if (!container.contains(e.target) && !e.target.closest('.maplibregl-ctrl')) container.classList.remove('open');
         });
     }
 
     initMap();
 
-    // System core - untouched
     (function setupBackButton() {
         const backBtn = document.getElementById('back-btn');
         if (!backBtn) return;
-
         if (isLocalSource()) {
             backBtn.innerHTML = '<span>✕</span><span class="btn-back-text">&nbsp;Cerrar</span>';
             backBtn.title = 'Cerrar vista previa';
-            backBtn.onclick = (e) => {
-                e.preventDefault();
-                window.close();
-            };
+            backBtn.onclick = (e) => { e.preventDefault(); window.close(); };
             return;
         }
-
         backBtn.innerHTML = '<span>←</span><span class="btn-back-text">&nbsp;Volver</span>';
         backBtn.title = 'Volver';
         backBtn.onclick = (e) => {
             e.preventDefault();
-
             const slugDirArc = getQueryParam('slugDirArc');
-
-            if (slugDirArc) {
-                const target = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
-                window.location.href = target;
-            } else if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = 'index.html';
-            }
+            if (slugDirArc) window.location.href = `index.html?slugDirArc=${encodeURIComponent(slugDirArc)}`;
+            else if (window.history.length > 1) window.history.back();
+            else window.location.href = 'index.html';
         };
     })();
 </script>
