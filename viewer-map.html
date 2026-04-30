@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Aio - Visor Mapas V2.2.1</title>
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+    <!-- Actualizado a la última versión estable para soporte de globo 3D -->
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" />
     <style>
   * {
     margin: 0;
@@ -921,7 +922,8 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<!-- Actualizado a la última versión estable -->
+<script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js"></script>
 <script>
     const DASH_RESET = [1, 0];
 
@@ -1674,19 +1676,46 @@ if (featureSearch) {
         appState.map = map;
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showCompass: false }), 'bottom-left');
         bindStyleSwitcher(map);
+        
         document.getElementById('btn-reset-view').addEventListener('click', () => {
             if (appState.datasetBounds) map.fitBounds(appState.datasetBounds, { padding: 24, maxZoom: 16, duration: 600 });
         });
+
+        // NUEVO: Manejador del botón globo con zoom "seamless"
         document.getElementById('btn-projection').addEventListener('click', () => {
             if (!map.setProjection) return;
             appState.currentProjection = appState.currentProjection === 'mercator' ? 'globe' : 'mercator';
             try {
                 map.setProjection({ type: appState.currentProjection });
                 document.getElementById('btn-projection').classList.toggle('active', appState.currentProjection === 'globe');
+                
+                // Efecto "Seamless": Ajustar la cámara para apreciar la curvatura o volver al detalle
+                if (appState.currentProjection === 'globe') {
+                    if (map.getZoom() > 4) {
+                        map.flyTo({ 
+                            zoom: 2.5, 
+                            pitch: 20, // Añade profundidad tridimensional a la vista planetaria
+                            duration: 1500,
+                            essential: true
+                        });
+                    }
+                } else {
+                    if (appState.datasetBounds) {
+                        map.fitBounds(appState.datasetBounds, { 
+                            padding: 24, 
+                            maxZoom: 16, 
+                            pitch: 0,
+                            duration: 1500 
+                        });
+                    } else {
+                        map.flyTo({ pitch: 0, duration: 1500 });
+                    }
+                }
             } catch (err) {
                 console.warn('No se pudo cambiar la proyección:', err);
             }
         });
+
         map.on('load', async () => {
             if (!(item.resolved_url || item.archivo)) return;
             const path = item.resolved_url || item.archivo;
