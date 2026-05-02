@@ -1409,6 +1409,51 @@ if (featureSearch) {
         appState.visibleCopyKeys = visible;
     }
 
+    function updateExpandedFeatureRenderProps() {
+    const features = (appState.expandedGeoData && appState.expandedGeoData.features) || [];
+    const visible = new Set();
+
+    features.forEach(feature => {
+        feature.properties = feature.properties || {};
+
+        const geometryType = feature.geometry && feature.geometry.type;
+        const style = featureStyleSnapshot(feature, appState.timelineValue);
+        const featureId = feature.properties.__featureId;
+        const selected = appState.selectedFeatureId && String(featureId) === String(appState.selectedFeatureId);
+        const fade = selectedFadeFactor(featureId);
+
+        feature.properties.__renderVisible = style.visible ? 1 : 0;
+        feature.properties.__renderState = getTimelineState(feature.properties || {}, appState.timelineValue, geometryType);
+
+        feature.properties.__renderLineColor = style.lineColor;
+        feature.properties.__renderFillColor = style.fillColor;
+
+        feature.properties.__renderLineOpacity = style.lineOpacity * fade;
+        feature.properties.__renderFillOpacity = style.fillOpacity * fade;
+        feature.properties.__renderCircleOpacity = style.circleOpacity * fade;
+
+        feature.properties.__renderLineWidth = style.lineWidth;
+        feature.properties.__renderCircleRadius = style.circleRadius;
+
+        feature.properties.__selected = selected && style.visible ? 1 : 0;
+        feature.properties.__renderOutlineOpacity = selected && style.visible ? 1 : 0;
+        feature.properties.__renderOutlineWidth =
+            selected && style.visible
+                ? (['LineString', 'MultiLineString'].includes(geometryType) ? style.lineWidth + 4 : style.lineWidth + 3)
+                : 0;
+        feature.properties.__renderPointOutlineRadius =
+            selected && style.visible
+                ? style.circleRadius + 4
+                : 0;
+
+        if (style.visible && feature.properties.__copyKey) {
+            visible.add(String(feature.properties.__copyKey));
+        }
+    });
+
+    appState.visibleCopyKeys = visible;
+}
+
     function expressionForGeometry(geomType, propKey, fallback) {
         const features = (appState.expandedGeoData && appState.expandedGeoData.features) || [];
         const entries = [];
@@ -1442,76 +1487,176 @@ if (featureSearch) {
     }
 
     function buildCopyKeyFilter(types, stateNames) {
-        const features = (appState.expandedGeoData && appState.expandedGeoData.features) || [];
-        const copyKeys = [];
-        features.forEach(feature => {
-            const type = feature.geometry && feature.geometry.type;
-            if (!types.includes(type)) return;
-            const state = getTimelineState(feature.properties || {}, appState.timelineValue, type);
-            if (stateNames.includes(state) && feature.properties && feature.properties.__copyKey) copyKeys.push(String(feature.properties.__copyKey));
-        });
-        if (!copyKeys.length) return ['==', ['get', '__copyKey'], '__none__'];
-        return ['in', ['get', '__copyKey'], ['literal', copyKeys]];
-    }
+    return [
+        'all',
+        ['in', ['geometry-type'], ['literal', types]],
+        ['==', ['get', '__renderVisible'], 1],
+        ['in', ['get', '__renderState'], ['literal', stateNames]]
+    ];
+}
 
     function ensureSourceAndLayers(map) {
-        if (!map.getSource('geojson-main')) {
-            map.addSource('geojson-main', { type: 'geojson', data: appState.expandedGeoData || { type: 'FeatureCollection', features: [] } });
-        }
-        if (!map.getLayer('geojson-fill')) {
-            map.addLayer({ id: 'geojson-fill', type: 'fill', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]], paint: { 'fill-color': '#00a8ff', 'fill-opacity': 0.16 } });
-        }
-        if (!map.getLayer('geojson-line-outline')) {
-            map.addLayer({ id: 'geojson-line-outline', type: 'line', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']]], paint: { 'line-color': '#ffffff', 'line-width': 0, 'line-opacity': 0 } });
-        }
-        if (!map.getLayer('geojson-line-solid')) {
-            map.addLayer({ id: 'geojson-line-solid', type: 'line', source: 'geojson-main', filter: ['==', ['get', '__copyKey'], '__none__'], paint: { 'line-color': '#00a8ff', 'line-width': 3, 'line-opacity': 0.95, 'line-dasharray': DASH_RESET } });
-        }
-        if (!map.getLayer('geojson-line-dashed')) {
-            map.addLayer({ id: 'geojson-line-dashed', type: 'line', source: 'geojson-main', filter: ['==', ['get', '__copyKey'], '__none__'], paint: { 'line-color': '#00a8ff', 'line-width': 3, 'line-opacity': 0.95, 'line-dasharray': [2, 2] } });
-        }
-        if (!map.getLayer('geojson-point-outline')) {
-            map.addLayer({ id: 'geojson-point-outline', type: 'circle', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]], paint: { 'circle-color': '#ffffff', 'circle-radius': 0, 'circle-opacity': 0 } });
-        }
-        if (!map.getLayer('geojson-circle')) {
-            map.addLayer({ id: 'geojson-circle', type: 'circle', source: 'geojson-main', filter: ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]], paint: { 'circle-color': '#00a8ff', 'circle-radius': 5.5, 'circle-opacity': 0.95, 'circle-stroke-width': 1.2, 'circle-stroke-color': '#081014' } });
-        }
+    if (!map.getSource('geojson-main')) {
+        map.addSource('geojson-main', {
+            type: 'geojson',
+            data: appState.expandedGeoData || { type: 'FeatureCollection', features: [] }
+        });
     }
 
-    function refreshLayerStyles(map) {
-        recomputeVisibleCopyKeys();
-        if (map.getLayer('geojson-fill')) {
-            map.setPaintProperty('geojson-fill', 'fill-color', expressionForGeometry('fill', 'fillColor', '#00a8ff'));
-            map.setPaintProperty('geojson-fill', 'fill-opacity', expressionForGeometry('fill', 'fillOpacity', 0.16));
-        }
-        if (map.getLayer('geojson-line-outline')) {
-            map.setPaintProperty('geojson-line-outline', 'line-width', expressionForGeometry('outline', 'outlineWidth', 0));
-            map.setPaintProperty('geojson-line-outline', 'line-opacity', expressionForGeometry('outline', 'outlineOpacity', 0));
-        }
-        if (map.getLayer('geojson-line-solid')) {
-            map.setFilter('geojson-line-solid', buildCopyKeyFilter(['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], ['active', 'decom', 'default']));
-            map.setPaintProperty('geojson-line-solid', 'line-color', expressionForGeometry('line', 'lineColor', '#00a8ff'));
-            map.setPaintProperty('geojson-line-solid', 'line-width', expressionForGeometry('line', 'lineWidth', 3));
-            map.setPaintProperty('geojson-line-solid', 'line-opacity', expressionForGeometry('line', 'lineOpacity', 0.95));
-            map.setPaintProperty('geojson-line-solid', 'line-dasharray', DASH_RESET);
-        }
-        if (map.getLayer('geojson-line-dashed')) {
-            map.setFilter('geojson-line-dashed', buildCopyKeyFilter(['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], ['planned']));
-            map.setPaintProperty('geojson-line-dashed', 'line-color', expressionForGeometry('line', 'lineColor', '#00a8ff'));
-            map.setPaintProperty('geojson-line-dashed', 'line-width', expressionForGeometry('line', 'lineWidth', 3));
-            map.setPaintProperty('geojson-line-dashed', 'line-opacity', expressionForGeometry('line', 'lineOpacity', 0.95));
-        }
-        if (map.getLayer('geojson-point-outline')) {
-            map.setPaintProperty('geojson-point-outline', 'circle-radius', expressionForGeometry('point-outline', 'pointOutlineRadius', 0));
-            map.setPaintProperty('geojson-point-outline', 'circle-opacity', expressionForGeometry('point-outline', 'outlineOpacity', 0));
-        }
-        if (map.getLayer('geojson-circle')) {
-            map.setPaintProperty('geojson-circle', 'circle-color', expressionForGeometry('circle', 'fillColor', '#00a8ff'));
-            map.setPaintProperty('geojson-circle', 'circle-radius', expressionForGeometry('circle', 'circleRadius', 5.5));
-            map.setPaintProperty('geojson-circle', 'circle-opacity', expressionForGeometry('circle', 'circleOpacity', 0.95));
-        }
-        renderFeatureTable();
+    if (!map.getLayer('geojson-fill')) {
+        map.addLayer({
+            id: 'geojson-fill',
+            type: 'fill',
+            source: 'geojson-main',
+            filter: ['all',
+                ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]],
+                ['==', ['get', '__renderVisible'], 1]
+            ],
+            paint: {
+                'fill-color': ['coalesce', ['get', '__renderFillColor'], '#00a8ff'],
+                'fill-opacity': ['coalesce', ['get', '__renderFillOpacity'], 0.16]
+            }
+        });
     }
+
+    if (!map.getLayer('geojson-line-outline')) {
+        map.addLayer({
+            id: 'geojson-line-outline',
+            type: 'line',
+            source: 'geojson-main',
+            filter: ['all',
+                ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']]],
+                ['==', ['get', '__selected'], 1]
+            ],
+            paint: {
+                'line-color': '#ffffff',
+                'line-width': ['coalesce', ['get', '__renderOutlineWidth'], 0],
+                'line-opacity': ['coalesce', ['get', '__renderOutlineOpacity'], 0]
+            }
+        });
+    }
+
+    if (!map.getLayer('geojson-line-solid')) {
+        map.addLayer({
+            id: 'geojson-line-solid',
+            type: 'line',
+            source: 'geojson-main',
+            filter: ['==', ['get', '__copyKey'], '__none__'],
+            paint: {
+                'line-color': ['coalesce', ['get', '__renderLineColor'], '#00a8ff'],
+                'line-width': ['coalesce', ['get', '__renderLineWidth'], 3],
+                'line-opacity': ['coalesce', ['get', '__renderLineOpacity'], 0.95],
+                'line-dasharray': DASH_RESET
+            }
+        });
+    }
+
+    if (!map.getLayer('geojson-line-dashed')) {
+        map.addLayer({
+            id: 'geojson-line-dashed',
+            type: 'line',
+            source: 'geojson-main',
+            filter: ['==', ['get', '__copyKey'], '__none__'],
+            paint: {
+                'line-color': ['coalesce', ['get', '__renderLineColor'], '#00a8ff'],
+                'line-width': ['coalesce', ['get', '__renderLineWidth'], 3],
+                'line-opacity': ['coalesce', ['get', '__renderLineOpacity'], 0.95],
+                'line-dasharray': [2, 2]
+            }
+        });
+    }
+
+    if (!map.getLayer('geojson-point-outline')) {
+        map.addLayer({
+            id: 'geojson-point-outline',
+            type: 'circle',
+            source: 'geojson-main',
+            filter: ['all',
+                ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]],
+                ['==', ['get', '__selected'], 1]
+            ],
+            paint: {
+                'circle-color': '#ffffff',
+                'circle-radius': ['coalesce', ['get', '__renderPointOutlineRadius'], 0],
+                'circle-opacity': ['coalesce', ['get', '__renderOutlineOpacity'], 0]
+            }
+        });
+    }
+
+    if (!map.getLayer('geojson-circle')) {
+        map.addLayer({
+            id: 'geojson-circle',
+            type: 'circle',
+            source: 'geojson-main',
+            filter: ['all',
+                ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]],
+                ['==', ['get', '__renderVisible'], 1]
+            ],
+            paint: {
+                'circle-color': ['coalesce', ['get', '__renderFillColor'], '#00a8ff'],
+                'circle-radius': ['coalesce', ['get', '__renderCircleRadius'], 5.5],
+                'circle-opacity': ['coalesce', ['get', '__renderCircleOpacity'], 0.95],
+                'circle-stroke-width': 1.2,
+                'circle-stroke-color': '#081014'
+            }
+        });
+    }
+}
+
+    function refreshLayerStyles(map) {
+    updateExpandedFeatureRenderProps();
+
+    if (map.getSource('geojson-main') && appState.expandedGeoData) {
+        map.getSource('geojson-main').setData(appState.expandedGeoData);
+    }
+
+    if (map.getLayer('geojson-fill')) {
+        map.setFilter('geojson-fill', [
+            'all',
+            ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]],
+            ['==', ['get', '__renderVisible'], 1]
+        ]);
+    }
+
+    if (map.getLayer('geojson-line-outline')) {
+        map.setFilter('geojson-line-outline', [
+            'all',
+            ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon']]],
+            ['==', ['get', '__selected'], 1]
+        ]);
+    }
+
+    if (map.getLayer('geojson-line-solid')) {
+        map.setFilter('geojson-line-solid',
+            buildCopyKeyFilter(['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], ['active', 'decom', 'default'])
+        );
+        map.setPaintProperty('geojson-line-solid', 'line-dasharray', DASH_RESET);
+    }
+
+    if (map.getLayer('geojson-line-dashed')) {
+        map.setFilter('geojson-line-dashed',
+            buildCopyKeyFilter(['LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'], ['planned'])
+        );
+    }
+
+    if (map.getLayer('geojson-point-outline')) {
+        map.setFilter('geojson-point-outline', [
+            'all',
+            ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]],
+            ['==', ['get', '__selected'], 1]
+        ]);
+    }
+
+    if (map.getLayer('geojson-circle')) {
+        map.setFilter('geojson-circle', [
+            'all',
+            ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]],
+            ['==', ['get', '__renderVisible'], 1]
+        ]);
+    }
+
+    renderFeatureTable();
+}
 
     function rehydrateOperationalLayers(map) {
         ensureSourceAndLayers(map);
@@ -1736,6 +1881,7 @@ if (featureSearch) {
                 renderFeatureTable();
                 setupTimeline(features);
                 appState.expandedGeoData = buildRepeatedFeatureCollection(appState.rawGeoData);
+                updateExpandedFeatureRenderProps();
                 appState.datasetBounds = computeCollectionBounds(appState.rawGeoData);
                 ensureSourceAndLayers(map);
                 map.getSource('geojson-main').setData(appState.expandedGeoData);
